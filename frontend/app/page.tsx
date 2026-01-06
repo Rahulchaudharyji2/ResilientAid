@@ -45,7 +45,7 @@ export default function Home() {
         alignItems: 'center', 
         justifyContent: 'center',
         position: 'relative', 
-        padding: '8rem 5% 4rem 5%',
+        padding: '6rem 5% 4rem 5%', /* Reduced top padding for mobile */
         background: `
           radial-gradient(circle at 10% 20%, rgba(0, 114, 255, 0.15) 0%, transparent 40%), 
           radial-gradient(circle at 90% 80%, rgba(0, 198, 255, 0.1) 0%, transparent 40%),
@@ -58,7 +58,7 @@ export default function Home() {
             display: 'grid', 
             gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
             alignItems: 'center', 
-            gap: '4rem' 
+            gap: '3rem' /* Reduced gap */
         }}>
             
             {/* Left Content: Text */}
@@ -66,13 +66,13 @@ export default function Home() {
                  <div style={{ 
                     display: 'inline-flex', 
                     alignItems: 'center', 
-                    padding: '0.5rem 1rem', 
+                    padding: '0.4rem 0.8rem', 
                     borderRadius: '50px', 
                     background: 'rgba(56, 239, 125, 0.1)', 
                     border: '1px solid rgba(56, 239, 125, 0.2)', 
-                    fontSize: '0.85rem', 
+                    fontSize: '0.8rem', 
                     color: '#38ef7d',
-                    marginBottom: '2rem',
+                    marginBottom: '1.5rem',
                     fontWeight: 600,
                     letterSpacing: '0.05em'
                 }}>
@@ -81,7 +81,7 @@ export default function Home() {
                 </div>
 
                 <h1 style={{ 
-                    fontSize: 'clamp(3.5rem, 5vw, 5rem)', 
+                    fontSize: 'clamp(2.5rem, 8vw, 5rem)', /* Adjusted clamp for mobile */
                     fontWeight: 800, 
                     lineHeight: 1.1, 
                     marginBottom: '1.5rem', 
@@ -100,10 +100,10 @@ export default function Home() {
                 </h1>
                 
                 <p style={{ 
-                    fontSize: '1.2rem', 
+                    fontSize: '1.1rem', 
                     color: '#B0B8C8', 
                     maxWidth: '550px', 
-                    marginBottom: '2.5rem', 
+                    marginBottom: '2rem', 
                     lineHeight: 1.6 
                 }}>
                     The world's first offline-capable aid distribution protocol. 
@@ -113,8 +113,8 @@ export default function Home() {
                 <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                     <Link href="/donor">
                     <button style={{ 
-                        padding: '1rem 2.5rem', 
-                        fontSize: '1.1rem', 
+                        padding: '0.9rem 2rem', 
+                        fontSize: '1rem', 
                         fontWeight: 600,
                         borderRadius: '12px', 
                         background: 'linear-gradient(135deg, #00C6FF 0%, #0072FF 100%)',
@@ -128,8 +128,8 @@ export default function Home() {
                     </button>
                     </Link>
                     <button style={{ 
-                        padding: '1rem 2.5rem', 
-                        fontSize: '1.1rem', 
+                        padding: '0.9rem 2rem', 
+                        fontSize: '1rem', 
                         fontWeight: 600,
                         borderRadius: '12px', 
                         background: 'rgba(255,255,255,0.05)', 
@@ -142,25 +142,25 @@ export default function Home() {
                 </div>
 
                 {/* Trust Metrics Mini-Row */}
-                <div style={{ marginTop: '3rem', display: 'flex', gap: '3rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1.5rem' }}>
+                <div style={{ marginTop: '2.5rem', display: 'flex', gap: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1.5rem' }}>
                     <div>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff' }}>$0</div>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#fff' }}>$0</div>
                         <div style={{ fontSize: '0.8rem', color: '#666' }}>Platform Fees</div>
                     </div>
                     <div>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff' }}>100%</div>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#fff' }}>100%</div>
                         <div style={{ fontSize: '0.8rem', color: '#666' }}>Transparency</div>
                     </div>
                 </div>
             </div>
 
             {/* Right Content: 3D Graphic */}
-            <div style={{ position: 'relative', height: '500px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ position: 'relative', height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center', maxWidth: '100vw', overflow: 'hidden' }}>
                 {/* Abstract Glow */}
                 <div style={{ position: 'absolute', width: '100%', height: '100%', background: 'radial-gradient(circle, rgba(0,114,255,0.2) 0%, transparent 70%)', filter: 'blur(60px)' }} />
 
                 {/* Floating Cards Container */}
-                <div style={{ position: 'relative', width: '100%', maxWidth: '400px', transform: 'perspective(1000px) rotateY(-10deg) rotateX(5deg)' }}>
+                <div style={{ position: 'relative', width: '100%', maxWidth: '350px', transform: 'perspective(1000px) rotateY(-5deg) rotateX(5deg)' }}>
                     
                     {/* Card 1: Donation Success */}
                     <div style={{ 
@@ -168,19 +168,19 @@ export default function Home() {
                         backdropFilter: 'blur(20px)', 
                         border: '1px solid rgba(255,255,255,0.1)', 
                         borderRadius: '20px', 
-                        padding: '1.5rem', 
-                        marginBottom: '1.5rem',
+                        padding: '1.25rem', 
+                        marginBottom: '1rem',
                         boxShadow: '0 20px 50px rgba(0,0,0,0.3)',
                         transform: 'translateZ(20px)',
                         animation: 'float 6s ease-in-out infinite'
                     }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                            <div style={{ background: '#38ef7d', width: '40px', height: '40px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', color: '#000' }}>✓</div>
-                            <span style={{ color: '#38ef7d', fontSize: '0.9rem', fontWeight: 600 }}>Confirmed on Chain</span>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.8rem' }}>
+                            <div style={{ background: '#38ef7d', width: '32px', height: '32px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', color: '#000' }}>✓</div>
+                            <span style={{ color: '#38ef7d', fontSize: '0.8rem', fontWeight: 600 }}>Confirmed on Chain</span>
                         </div>
-                        <div style={{ color: '#888', fontSize: '0.9rem' }}>Transaction Hash</div>
-                        <div style={{ color: '#fff', fontFamily: 'monospace' }}>0x7f...3a9c</div>
-                        <div style={{ marginTop: '1rem', height: '4px', width: '100%', background: 'rgba(255,255,255,0.1)', borderRadius: '2px' }}>
+                        <div style={{ color: '#888', fontSize: '0.8rem' }}>Transaction Hash</div>
+                        <div style={{ color: '#fff', fontFamily: 'monospace', fontSize: '0.9rem' }}>0x7f...3a9c</div>
+                        <div style={{ marginTop: '0.8rem', height: '4px', width: '100%', background: 'rgba(255,255,255,0.1)', borderRadius: '2px' }}>
                             <div style={{ width: '100%', height: '100%', background: '#38ef7d', borderRadius: '2px' }} />
                         </div>
                     </div>
@@ -191,19 +191,19 @@ export default function Home() {
                         backdropFilter: 'blur(20px)', 
                         border: '1px solid rgba(255,255,255,0.1)', 
                         borderRadius: '20px', 
-                        padding: '1.5rem',
+                        padding: '1.25rem',
                         boxShadow: '0 20px 50px rgba(0,0,0,0.3)',
-                        transform: 'translateZ(0px) translateX(30px)',
+                        transform: 'translateZ(0px) translateX(20px)',
                         animation: 'float 6s ease-in-out infinite 2s'
                     }}>
-                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                            <div style={{ width: '40px', height: '40px', background: 'linear-gradient(135deg, #FF512F, #DD2476)', borderRadius: '50%' }} />
+                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                            <div style={{ width: '32px', height: '32px', background: 'linear-gradient(135deg, #FF512F, #DD2476)', borderRadius: '50%' }} />
                             <div>
-                                <div style={{ color: '#fff', fontWeight: 600 }}>Beneficiary Received</div>
-                                <div style={{ color: '#888', fontSize: '0.8rem' }}>Just now • Uganda Relief Fund</div>
+                                <div style={{ color: '#fff', fontWeight: 600, fontSize: '0.9rem' }}>Beneficiary Received</div>
+                                <div style={{ color: '#888', fontSize: '0.7rem' }}>Just now • Uganda Relief Fund</div>
                             </div>
                          </div>
-                         <div style={{ marginTop: '1rem', fontSize: '1.5rem', fontWeight: 700, color: '#fff' }}>+ 50.00 rUSD</div>
+                         <div style={{ marginTop: '0.8rem', fontSize: '1.25rem', fontWeight: 700, color: '#fff' }}>+ 50.00 rUSD</div>
                     </div>
 
                 </div>
@@ -213,11 +213,11 @@ export default function Home() {
       </section>
 
       {/* Trusted By Strip */}
-      <section style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: '#020410', padding: '2rem 0' }}>
-        <p style={{ textAlign: 'center', color: '#666', fontSize: '0.9rem', letterSpacing: '0.1em', marginBottom: '1.5rem', textTransform: 'uppercase' }}>Powered By Industry Leaders</p>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '4rem', opacity: 0.6, filter: 'grayscale(100%)' }}>
+      <section style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: '#020410', padding: '2rem 1rem' }}>
+        <p style={{ textAlign: 'center', color: '#666', fontSize: '0.8rem', letterSpacing: '0.1em', marginBottom: '1.5rem', textTransform: 'uppercase' }}>Powered By Industry Leaders</p>
+        <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '2rem', opacity: 0.6, filter: 'grayscale(100%)' }}>
             {['POLYGON', 'CHAINLINK', 'THE GRAPH', 'BYBIT', 'ALCHEMY'].map(logo => (
-                <span key={logo} style={{ fontWeight: 700, fontSize: '1.2rem', color: '#fff' }}>{logo}</span>
+                <span key={logo} style={{ fontWeight: 700, fontSize: '1.1rem', color: '#fff' }}>{logo}</span>
             ))}
         </div>
       </section>

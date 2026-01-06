@@ -111,3 +111,4 @@ Open **[http://localhost:3000](http://localhost:3000)**
   - Handles: `processOfflineTransaction(signature)` ensuring trustless settlement.
 
 ---
+
