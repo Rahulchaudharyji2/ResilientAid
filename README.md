@@ -111,4 +111,3 @@ Open **[http://localhost:3000](http://localhost:3000)**
   - Handles: `processOfflineTransaction(signature)` ensuring trustless settlement.
 
 ---
-*Built by Team Antigravity for the National Level Web3 Hackathon.*
