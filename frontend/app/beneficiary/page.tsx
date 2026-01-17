@@ -4,6 +4,7 @@ import { useAccount, useReadContract, useSignMessage, useWriteContract } from 'w
 import { RELIEF_TOKEN_ADDRESS, RELIEF_TOKEN_ABI, RELIEF_FUND_ADDRESS, RELIEF_FUND_ABI } from '../../config/contracts';
 import { formatEther, parseEther } from 'viem';
 import QRCode from 'react-qr-code';
+import Navbar from '../components/Navbar';
 
 export default function BeneficiaryDashboard() {
   const { address } = useAccount();
@@ -17,7 +18,7 @@ export default function BeneficiaryDashboard() {
   const { writeContractAsync } = useWriteContract();
 
   // 1. Fetch Balance (Polled)
-  const { data: balanceData, refetch: refetchBalance } = useReadContract({
+  const { data: balanceData } = useReadContract({
     address: RELIEF_TOKEN_ADDRESS as `0x${string}`,
     abi: RELIEF_TOKEN_ABI,
     functionName: 'balanceOf',
@@ -36,7 +37,7 @@ export default function BeneficiaryDashboard() {
     args: [address],
   });
 
-  // 3. Get Category Name (Optional, needs fetch)
+  // 3. Get Category Name
   const { data: categoryData } = useReadContract({
       address: RELIEF_FUND_ADDRESS as `0x${string}`,
       abi: RELIEF_FUND_ABI,
@@ -57,14 +58,18 @@ export default function BeneficiaryDashboard() {
     }
 
     try {
-        const amount = voucherAmount;
+        // Convert to BigInt Wei for signing consistency with Contract
+        const amountWei = parseEther(voucherAmount);
         const nonce = Date.now();
-        const message = `Authorize transfer of ${amount} rUSD to vendor. Nonce: ${nonce}`;
+        
+        // Exact message format as in ReliefFund.sol
+        const message = `Authorize transfer of ${amountWei.toString()} rUSD to vendor. Nonce: ${nonce}`;
+        
         const signature = await signMessageAsync({ message });
         
         const voucher = JSON.stringify({
           beneficiary: address,
-          amount: amount,
+          amount: amountWei.toString(), // Send Wei to vendor
           nonce: nonce,
           signature: signature,
           categoryId: categoryId ? Number(categoryId) : 0 
@@ -103,7 +108,8 @@ export default function BeneficiaryDashboard() {
   };
 
   return (
-    <div className="container">
+    <div className="container" style={{ paddingTop: '100px' }}>
+      <Navbar />
       <header>
         <h1>Beneficiary Wallet</h1>
         <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
@@ -132,8 +138,36 @@ export default function BeneficiaryDashboard() {
             <button className="btn" onClick={handleGenerateVoucher}>Generate QR Voucher</button>
             
             {generatedVoucher && (
-              <div style={{ marginTop: '1rem', background: 'white', padding: '1rem', borderRadius: '8px' }}>
-                  <QRCode value={generatedVoucher} size={200} viewBox={`0 0 256 256`} style={{ maxWidth: "100%", height: "auto" }} />
+              <div style={{ marginTop: '1rem', background: 'white', padding: '1rem', borderRadius: '8px', textAlign: 'center' }}>
+                  <div id="qr-code-wrapper">
+                      <QRCode value={generatedVoucher} size={200} viewBox={`0 0 256 256`} style={{ maxWidth: "100%", height: "auto" }} />
+                  </div>
+                  <button 
+                    className="btn" 
+                    style={{ marginTop: '1rem', background: '#333', fontSize: '0.9rem' }}
+                    onClick={() => {
+                        const svg = document.getElementById("qr-code-wrapper")?.querySelector("svg");
+                        if (svg) {
+                            const svgData = new XMLSerializer().serializeToString(svg);
+                            const canvas = document.createElement("canvas");
+                            const ctx = canvas.getContext("2d");
+                            const img = new Image();
+                            img.onload = () => {
+                                canvas.width = img.width;
+                                canvas.height = img.height;
+                                ctx?.drawImage(img, 0, 0);
+                                const pngFile = canvas.toDataURL("image/png");
+                                const downloadLink = document.createElement("a");
+                                downloadLink.download = "Relief-Voucher.png";
+                                downloadLink.href = pngFile;
+                                downloadLink.click();
+                            };
+                            img.src = "data:image/svg+xml;base64," + btoa(svgData);
+                        }
+                    }}
+                  >
+                      ⬇️ Download QR Image
+                  </button>
               </div>
             )}
         </div>

@@ -1,7 +1,7 @@
 // Address placeholders - TO BE UPDATED AFTER DEPLOYMENT
-export const RELIEF_TOKEN_ADDRESS = "0xFBFC72329eB24C43745fCA901a4b1c65133819B9";
-export const RELIEF_FUND_ADDRESS = "0xfFae6f82c94557D8D184562B80F0431FA3F5c079";
-export const NETWORK_CHAIN_ID = 80002; // Polygon Amoy
+export const RELIEF_TOKEN_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+export const RELIEF_FUND_ADDRESS = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
+export const NETWORK_CHAIN_ID = 31337; // Hardhat Localhost
 
 
 export const RELIEF_TOKEN_ABI = [
@@ -573,5 +573,19 @@ export const RELIEF_FUND_ABI = [
     { "inputs": [], "name": "token", "outputs": [{ "internalType": "contract ReliefToken", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" },
     { "inputs": [{ "internalType": "address", "name": "newOwner", "type": "address" }], "name": "transferOwnership", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
     { "inputs": [{ "internalType": "address", "name": "_beneficiary", "type": "address" }, { "internalType": "uint256", "name": "_categoryId", "type": "uint256" }], "name": "whitelistBeneficiary", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
-    { "inputs": [{ "internalType": "address", "name": "_vendor", "type": "address" }, { "internalType": "uint256", "name": "_categoryId", "type": "uint256" }], "name": "whitelistVendor", "outputs": [], "stateMutability": "nonpayable", "type": "function" }
+    { "inputs": [{ "internalType": "address", "name": "_vendor", "type": "address" }, { "internalType": "uint256", "name": "_categoryId", "type": "uint256" }], "name": "whitelistVendor", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+    {
+      "inputs": [{ "internalType": "uint256", "name": "amount", "type": "uint256" }, { "internalType": "uint256", "name": "nonce", "type": "uint256" }],
+      "name": "getMessageHash",
+      "outputs": [{ "internalType": "bytes32", "name": "", "type": "bytes32" }],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
+      "name": "nonces",
+      "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+      "stateMutability": "view",
+      "type": "function"
+    }
 ];

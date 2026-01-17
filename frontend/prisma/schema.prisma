@@ -1,0 +1,30 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:C:/Users/lenovo/.gemini/antigravity/scratch/resilient-aid/frontend/dev.db"
+}
+
+model User {
+  id            String   @id @default(cuid())
+  address       String   @unique
+  role          String
+  chainId       Int?
+  categoryId    Int?
+  name          String?
+  createdAt     DateTime @default(now())
+}
+
+model Transaction {
+  id            String   @id @default(cuid())
+  txHash        String   @unique
+  fromAddress   String
+  toAddress     String
+  amount        String
+  tokenSymbol   String   @default("rUSD")
+  type          String
+  status        String   @default("CONFIRMED")
+  timestamp     DateTime @default(now())
+}

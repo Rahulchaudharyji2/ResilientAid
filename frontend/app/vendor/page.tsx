@@ -1,13 +1,17 @@
 "use client";
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useWriteContract, useAccount, useReadContract } from 'wagmi';
 import { RELIEF_FUND_ADDRESS, RELIEF_FUND_ABI, RELIEF_TOKEN_ADDRESS, RELIEF_TOKEN_ABI } from '../../config/contracts';
 import { parseEther, formatEther } from 'viem';
+import Navbar from '../components/Navbar';
+import { Html5QrcodeScanner, Html5Qrcode } from 'html5-qrcode';
 
 export default function VendorDashboard() {
   const { address } = useAccount();
   const [voucherData, setVoucherData] = useState('');
   const [status, setStatus] = useState('');
+  const [showScanner, setShowScanner] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { writeContractAsync } = useWriteContract();
 
@@ -40,18 +44,67 @@ export default function VendorDashboard() {
   const formattedBalance = balanceData ? formatEther(balanceData as bigint) : '0';
   const categoryName = categoryData ? (categoryData as any)[0] : 'Unverified';
 
-  // Transaction History State (Local for Demo)
-  // In production, fetch this from 'AidUsed' events using Graph or specific query
+  // Transaction History State
   const [txHistory, setTxHistory] = useState<any[]>([]);
+
+  // QR Scan Success Handler
+  const onScanSuccess = (decodedText: string) => {
+    try {
+        JSON.parse(decodedText);
+        setVoucherData(decodedText);
+        setShowScanner(false);
+    } catch (e) {
+        console.warn("Scanned non-JSON data", decodedText);
+    }
+  };
+
+  // Toggle Camera Scanner
+  useEffect(() => {
+     if (showScanner) {
+         const scanner = new Html5QrcodeScanner(
+             "reader", { fps: 10, qrbox: 250 }, false
+         );
+         scanner.render(onScanSuccess, (err) => console.log(err));
+         return () => { scanner.clear().catch(e => console.error(e)); };
+     }
+  }, [showScanner]);
+
+  const handleFileUpload = async (e: any) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const html5QrCode = new Html5Qrcode("reader-hidden");
+      try {
+          const result = await html5QrCode.scanFileV2(file, true);
+          console.log("QR Scan Result:", result);
+          
+          let text = '';
+          if (typeof result === 'string') {
+              text = result;
+          } else if (typeof result === 'object' && (result as any).decodedText) {
+               // Handle case where library returns object
+              text = (result as any).decodedText;
+          } else {
+              // Fallback
+              text = JSON.stringify(result);
+          }
+          
+          setVoucherData(text);
+          // Auto process or just show? Let's just set data for now.
+      } catch (err) {
+          console.error(err);
+          setStatus("Error reading QR from image. Try another image.");
+      }
+  };
 
   const handleProcessVoucher = async () => {
     try {
         setStatus("Verifying and Processing Transaction...");
         const voucher = JSON.parse(voucherData);
-        // Clean JSON text if user copy-pasted with extra whitespace
         
         console.log("Processing Voucher:", voucher);
         
+        // 1. Contract Interaction
         const tx = await writeContractAsync({
             address: RELIEF_FUND_ADDRESS as `0x${string}`,
             abi: RELIEF_FUND_ABI,
@@ -64,6 +117,25 @@ export default function VendorDashboard() {
             ]
         });
         
+        // 2. Log to Persistent Database
+        try {
+            await fetch('/api/transaction', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    txHash: tx,
+                    from: voucher.beneficiary,
+                    to: address, // Vendor is recipient
+                    amount: voucher.amount.toString(),
+                    type: 'OFFLINE_QR',
+                    status: 'CONFIRMED'
+                })
+            });
+        } catch (dbError) {
+            console.error("DB Log failed", dbError);
+        }
+        
+        // 3. Update UI
         const newTx = {
             id: tx,
             beneficiary: voucher.beneficiary,
@@ -81,7 +153,8 @@ export default function VendorDashboard() {
   };
 
   return (
-    <div className="container">
+    <div className="container" style={{ paddingTop: '100px' }}>
+      <Navbar />
       <header>
         <h1>Vendor Terminal</h1>
         <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
@@ -99,10 +172,36 @@ export default function VendorDashboard() {
       <div className="card" style={{ maxWidth: '600px', margin: '2rem auto' }}>
         <h2>Scan/Input Voucher (Offline Mode)</h2>
         <p>Accept payments from Beneficiaries in your category.</p>
+
+        {/* Action Buttons */}
+        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+            <button className="btn" style={{ background: '#333' }} onClick={() => setShowScanner(!showScanner)}>
+                {showScanner ? 'Close Scanner' : '📷 Scan QR Camera'}
+            </button>
+            <button className="btn" style={{ background: '#333' }} onClick={() => fileInputRef.current?.click()}>
+                📁 Upload QR Image
+            </button>
+            <input 
+                type="file" 
+                ref={fileInputRef} 
+                style={{ display: 'none' }} 
+                accept="image/*"
+                onChange={handleFileUpload}
+            />
+        </div>
+
+        {/* Hidden Div for File Scan */}
+        <div id="reader-hidden" style={{ display: 'none' }}></div>
+
+        {/* Camera Scanner Container */}
+        {showScanner && (
+            <div id="reader" style={{ width: '100%', marginBottom: '1rem', border: '1px solid #444', borderRadius: '8px' }}></div>
+        )}
+
         <textarea 
           value={voucherData}
           onChange={(e) => setVoucherData(e.target.value)}
-          placeholder='Paste Voucher JSON data here...'
+          placeholder='Paste Voucher JSON data here or Scan QR...'
           rows={6}
           style={{ width: '100%', padding: '1rem', background: '#222', color: '#0f0', borderRadius: '8px', fontFamily: 'monospace', border: '1px solid #444' }}
         />

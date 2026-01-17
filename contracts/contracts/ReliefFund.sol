@@ -2,9 +2,16 @@
 pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 import "./ReliefToken.sol";
 
 contract ReliefFund is Ownable {
+    using ECDSA for bytes32;
+    using MessageHashUtils for bytes32;
+    using Strings for uint256;
+
     ReliefToken public token;
 
     struct Category {
@@ -16,6 +23,7 @@ contract ReliefFund is Ownable {
 
     mapping(uint256 => Category) public categories;
     mapping(address => uint256) public entityCategory; // Address -> Category ID
+    mapping(address => uint256) public nonces; // Replay protection
     uint256 public categoryCount;
 
     event CategoryAdded(uint256 indexed id, string name);
@@ -52,8 +60,6 @@ contract ReliefFund is Ownable {
         require(msg.value > 0, "Donation must be greater than 0");
 
         // Mint rUSD to the Fund (Pool) representing the value
-        // Note: In production, this might be triggered by an Oracle or Stablecoin transfer.
-        // Here, we treat Native Token (ETH/MATIC) 1:1 with rUSD for simplicity of demo.
         token.mint(address(this), msg.value);
 
         categories[_categoryId].totalRaised += msg.value;
@@ -73,15 +79,6 @@ contract ReliefFund is Ownable {
             
             // Track stats per category
             uint256 catId = entityCategory[_beneficiaries[i]];
-            // Note: We don't increment totalRaised here anymore if it comes from the pool
-            // But if we Minted (Safety Net), we should probably consider it "Government Funding" (Raised).
-            // For simplicity, we only track Donor Funding in 'totalRaised' now (via donate function).
-            // Actually, if we mint, let's essentially say it was "Auto-Raised".
-            
-            // Wait, user wants to see "Raised" for that category.
-            // If Admin mints, it's effectively raised.
-            // Let's keep the increment logic BUT only if we minted.
-            // If we transferred from pool, it was already counted in 'donate'. Don't double count.
             
             if (token.balanceOf(address(this)) < _amount && catId != 0) {
                  categories[catId].totalRaised += _amount;
@@ -101,22 +98,53 @@ contract ReliefFund is Ownable {
     ) external {
         require(token.vendors(msg.sender), "Caller is not a verified vendor");
         
-        // Critical: Check Category Match
+        // 1. Check Category Match
         uint256 benCat = entityCategory[beneficiary];
         uint256 vendCat = entityCategory[msg.sender];
         
         require(benCat != 0, "Beneficiary not assigned to category");
         require(benCat == vendCat, "Category Mismatch: Aid can only be used within the same Relief Category");
 
-        // Transfer from beneficiary to vendor
+        // 2. Replay Protection
+        require(nonce > nonces[beneficiary], "Invalid Nonce: Replay Attack");
+        nonces[beneficiary] = nonce;
+
+        // 3. Signature Verification
+        // Reconstruct the message: "Authorize transfer of <amount> rUSD to vendor. Nonce: <nonce>"
+        // Note: amount is in Wei.
+        string memory message = string.concat(
+            "Authorize transfer of ", 
+            amount.toString(), 
+            " rUSD to vendor. Nonce: ", 
+            nonce.toString()
+        );
+
+        bytes32 messageHash = keccak256(bytes(message));
+        bytes32 ethSignedMessageHash = messageHash.toEthSignedMessageHash();
+        
+        address signer = ethSignedMessageHash.recover(signature);
+        require(signer == beneficiary, "Invalid Signature: Not signed by beneficiary");
+
+        // 4. Transfer from beneficiary to vendor
         token.transferFrom(beneficiary, msg.sender, amount);
         
-        // Update stats
+        // 5. Update stats
         categories[benCat].totalDistributed += amount;
         emit AidUsed(benCat, beneficiary, msg.sender, amount);
     }
 
-    // NEW: Function for Beneficiaries to pay Vendors directly (Online) while tracking stats
+    // New function to help frontend verify what to sign
+    function getMessageHash(uint256 amount, uint256 nonce) public pure returns (bytes32) {
+        string memory message = string.concat(
+            "Authorize transfer of ", 
+            amount.toString(), 
+            " rUSD to vendor. Nonce: ", 
+            nonce.toString()
+        );
+        return keccak256(bytes(message));
+    }
+
+    // Function for Beneficiaries to pay Vendors directly (Online) while tracking stats
     function payVendor(address _vendor, uint256 _amount) public {
         require(token.beneficiaries(msg.sender), "Caller is not a beneficiary");
         require(token.vendors(_vendor), "Recipient is not a verified vendor");
@@ -128,7 +156,6 @@ contract ReliefFund is Ownable {
         require(benCat == vendCat, "Category Mismatch: Aid can only be used within the same Relief Category");
 
         // Transfer funds - ReliefFund (Owner) moves funds from Beneficiary to Vendor
-        // This utilizes the 'infinite allowance' override in ReliefToken for the Owner
         token.transferFrom(msg.sender, _vendor, _amount);
 
         // Update stats

@@ -88,3 +88,31 @@ input:focus {
   outline: none;
   border-color: var(--accent);
 }
+
+/* Responsive Utilities */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+    width: 95%;
+  }
+
+  h1 {
+    font-size: 2rem;
+  }
+
+  .card {
+    padding: 1.5rem;
+  }
+  
+  /* Make all flex containers with 'flex-responsive' class stack on mobile */
+  .flex-responsive {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+}
+
+.flex-responsive {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}

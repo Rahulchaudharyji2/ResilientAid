@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useReadContract, useWriteContract, useWatchContractEvent } from 'wagmi';
 import { RELIEF_TOKEN_ADDRESS, RELIEF_TOKEN_ABI, RELIEF_FUND_ADDRESS, RELIEF_FUND_ABI } from '../../config/contracts';
 import { formatEther, parseEther } from 'viem';
+import Navbar from '../components/Navbar';
 
 export default function DonorDashboard() {
   const [donationAmount, setDonationAmount] = useState('');
@@ -44,7 +45,8 @@ export default function DonorDashboard() {
   });
 
   return (
-    <div className="container">
+    <div className="container" style={{ paddingTop: '100px' }}>
+      <Navbar />
       <header>
         <h1>Donor Transparency Portal</h1>
         <p>Live tracking of every cent from Donation to Redemption.</p>
