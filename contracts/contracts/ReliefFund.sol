@@ -167,4 +167,23 @@ contract ReliefFund is Ownable {
         categories[benCat].totalDistributed += _amount;
         emit AidUsed(benCat, msg.sender, _vendor, _amount);
     }
+    // Feature: Vendor-Initiated Charge (Biometric Auth Simulation)
+    // Allows a verified vendor to pull funds from a beneficiary after off-chain biometric verification
+    function chargeBeneficiary(address _beneficiary, uint256 _amount) public {
+        require(token.vendors(msg.sender), "Caller is not a verified vendor");
+        require(token.beneficiaries(_beneficiary), "Target is not a beneficiary");
+        
+        uint256 benCat = entityCategory[_beneficiary];
+        uint256 vendCat = entityCategory[msg.sender];
+        
+        require(benCat != 0, "Beneficiary not assigned to category");
+        require(benCat == vendCat, "Category Mismatch");
+
+        // Transfer funds (ReliefFund authority allows moving without specific approval if architected so)
+        token.transferFrom(_beneficiary, msg.sender, _amount);
+        
+        // Update stats
+        categories[benCat].totalDistributed += _amount;
+        emit AidUsed(benCat, _beneficiary, msg.sender, _amount);
+    }
 }

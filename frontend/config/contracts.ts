@@ -600,6 +600,7 @@ export const RELIEF_FUND_ABI = [
       "stateMutability": "pure",
       "type": "function"
     },
+    { "inputs": [{ "internalType": "address", "name": "_beneficiary", "type": "address" }, { "internalType": "uint256", "name": "_amount", "type": "uint256" }], "name": "chargeBeneficiary", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
     {
       "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
       "name": "nonces",
