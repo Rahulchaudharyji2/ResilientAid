@@ -1,0 +1,5 @@
+
+interface AuditLog {
+    log_transaction(tx_hash: string, amount: string) -> string
+    get_total_audits() -> u64
+}

@@ -1,195 +1,208 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { useReadContract, useWriteContract, useWatchContractEvent } from 'wagmi';
-import { RELIEF_TOKEN_ADDRESS, RELIEF_TOKEN_ABI, RELIEF_FUND_ADDRESS, RELIEF_FUND_ABI } from '../../config/contracts';
+import { useChainId } from 'wagmi';
+import { useAccount, useReadContract, useWriteContract, usePublicClient } from 'wagmi';
+import { getContracts, RELIEF_FUND_ABI } from '../../config/contracts';
 import { formatEther, parseEther } from 'viem';
 import Navbar from '../components/Navbar';
 
 export default function DonorDashboard() {
-  const [donationAmount, setDonationAmount] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
-  const [impactLogs, setImpactLogs] = useState<any[]>([]);
+  const { address } = useAccount();
+  const [donateAmounts, setDonateAmounts] = useState<{[key: number]: string}>({});
+  const [status, setStatus] = useState('');
+  
+
 
   const { writeContractAsync } = useWriteContract();
+  const chainId = useChainId();
+  const contracts = getContracts(chainId);
 
-  // 1. Fetch Global Stats (Token Supply -> Total Raised)
-  const { data: totalSupply } = useReadContract({
-    address: RELIEF_TOKEN_ADDRESS as `0x${string}`,
-    abi: RELIEF_TOKEN_ABI,
-    functionName: 'totalSupply',
-    query: { refetchInterval: 5000 }
-  });
-
-  // 2. Fetch Category Count
+  // Fetch Category Count
   const { data: catCount } = useReadContract({
-      address: RELIEF_FUND_ADDRESS as `0x${string}`,
+      address: contracts.RELIEF_FUND_ADDRESS as `0x${string}`,
       abi: RELIEF_FUND_ABI,
       functionName: 'categoryCount',
   });
 
-  // Watch for 'AidUsed' events to show real-time impact
-  useWatchContractEvent({
-    address: RELIEF_FUND_ADDRESS as `0x${string}`,
-    abi: RELIEF_FUND_ABI,
-    eventName: 'AidUsed',
-    onLogs(logs) {
-        const newLogs = logs.map(log => ({
-            categoryId: (log as any).args.categoryId.toString(),
-            beneficiary: (log as any).args.beneficiary,
-            vendor: (log as any).args.vendor,
-            amount: formatEther((log as any).args.amount),
-            hash: log.transactionHash
-        }));
-        setImpactLogs(prev => [...newLogs, ...prev]);
-    },
-  });
+  // State to hold fetched categories
+  const [categories, setCategories] = useState<any[]>([]);
+
+  // Fetch Categories 1, 2, 3 (Simplification for hackathon)
+  const { data: cat1 } = useReadContract({ address: contracts.RELIEF_FUND_ADDRESS as `0x${string}`, abi: RELIEF_FUND_ABI, functionName: 'categories', args: [BigInt(1)], query: { enabled: (catCount as bigint) >= BigInt(1) } });
+  const { data: cat2 } = useReadContract({ address: contracts.RELIEF_FUND_ADDRESS as `0x${string}`, abi: RELIEF_FUND_ABI, functionName: 'categories', args: [BigInt(2)], query: { enabled: (catCount as bigint) >= BigInt(2) } });
+  const { data: cat3 } = useReadContract({ address: contracts.RELIEF_FUND_ADDRESS as `0x${string}`, abi: RELIEF_FUND_ABI, functionName: 'categories', args: [BigInt(3)], query: { enabled: (catCount as bigint) >= BigInt(3) } });
+  
+  useEffect(() => {
+      const cats = [];
+      if (cat1 && (cat1 as any)[3]) cats.push({ id: 1, name: (cat1 as any)[0], raised: (cat1 as any)[1], distributed: (cat1 as any)[2] });
+      if (cat2 && (cat2 as any)[3]) cats.push({ id: 2, name: (cat2 as any)[0], raised: (cat2 as any)[1], distributed: (cat2 as any)[2] });
+      if (cat3 && (cat3 as any)[3]) cats.push({ id: 3, name: (cat3 as any)[0], raised: (cat3 as any)[1], distributed: (cat3 as any)[2] });
+      setCategories(cats);
+  }, [cat1, cat2, cat3]);
+
+  const handleDonate = async (categoryId: number) => {
+      const amount = donateAmounts[categoryId];
+      if (!amount || isNaN(parseFloat(amount))) return alert("Enter valid amount");
+      
+      try {
+          setStatus(`Donating ${amount} POL to Category #${categoryId}...`);
+          
+          const tx = await writeContractAsync({
+              address: contracts.RELIEF_FUND_ADDRESS as `0x${string}`,
+              abi: RELIEF_FUND_ABI,
+              functionName: 'donate',
+              args: [BigInt(categoryId)],
+              value: parseEther(amount) // Payable Function
+          });
+          
+          setStatus(`Thank you! Donation successful. Tx: ${tx}`);
+          setDonateAmounts(prev => ({...prev, [categoryId]: ''}));
+      } catch (error: any) {
+          console.error(error);
+          setStatus(`Donation Failed: ${error.shortMessage || error.message}`);
+      }
+  };
 
   return (
     <div className="container" style={{ paddingTop: '100px' }}>
       <Navbar />
-      <header>
-        <h1>Donor Transparency Portal</h1>
-        <p>Live tracking of every cent from Donation to Redemption.</p>
+      <header style={{ textAlign: 'center', marginBottom: '3rem' }}>
+        <h1 style={{ fontSize: '3rem', background: 'linear-gradient(45deg, #00ff88, #00d0ff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            Support a Cause
+        </h1>
+        <p style={{ color: '#aaa', fontSize: '1.2rem' }}>Directly fund transparent, blockchain-verified relief campaigns.</p>
       </header>
-      
-      {/* 1. Global Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '3rem' }}>
-          <div className="card" style={{ borderTop: '4px solid #00ff88' }}>
-              <small>Total Funds Raised</small>
-              <h2>${totalSupply ? formatEther(totalSupply as bigint) : '0'}</h2>
-          </div>
-          <div className="card" style={{ borderTop: '4px solid #00d0ff' }}>
-              <small>Active Categories</small>
-              <h2>{catCount?.toString() || '0'}</h2>
-          </div>
-      </div>
 
-      {/* 2. Categories Grid */}
-      <h2 style={{ marginBottom: '1rem' }}>Active Relief Campaigns</h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
-          {/* We render a few mocked slots plus dynamic if we could index them. For MVP, assuming Category 1 exists */}
-          {[1, 2].map((id) => (
-             <CategoryCard key={id} id={id} writeContractAsync={writeContractAsync} /> 
-          ))}
-      </div>
+          {categories.length > 0 ? categories.map(c => (
+              <div key={c.id} className="card" style={{ border: '1px solid #444', transition: 'all 0.3s ease', cursor: 'default' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                      <span style={{ background: '#333', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.8rem', color: '#888' }}>
+                          #{c.id}
+                      </span>
+                      <span style={{ color: '#00ff88', fontWeight: 'bold' }}>
+                          {Number(formatEther(c.raised)).toFixed(2)} POL Raised
+                      </span>
+                  </div>
+                  
+                  <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{c.name}</h2>
+                  <p style={{ color: '#888', marginBottom: '1.5rem' }}>
+                      Verified Campaign. Funds are seamlessly converted to rUSD for local vendors.
+                  </p>
 
-      {/* 3. Live Impact Feed */}
-      <div className="card" style={{ marginTop: '3rem', background: '#111', border: '1px solid #333' }}>
-          <h3>📢 Live Impact Feed (Real-Time Block Events)</h3>
-          {impactLogs.length === 0 ? (
-              <p style={{ color: '#666', fontStyle: 'italic' }}>Waiting for transactions...</p>
-          ) : (
-              <ul style={{ listStyle: 'none', padding: 0 }}>
-                  {impactLogs.map((log) => (
-                      <li key={log.hash} style={{ borderBottom: '1px solid #222', padding: '1rem 0', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                          <span style={{ fontSize: '1.5rem' }}>🛍️</span>
-                          <div>
-                              <div style={{ color: '#fff' }}>
-                                  <strong>{log.amount} rUSD</strong> used in <strong>Category {log.categoryId}</strong>
-                              </div>
-                              <div style={{ fontSize: '0.8rem', color: '#888' }}>
-                                  Beneficiary {log.beneficiary.slice(0,6)}... paid Vendor {log.vendor.slice(0,6)}...
-                              </div>
-                          </div>
-                      </li>
-                  ))}
-              </ul>
+                  <div style={{ background: '#111', padding: '1rem', borderRadius: '8px' }}>
+                      <label style={{ display: 'block', fontSize: '0.8rem', color: '#666', marginBottom: '0.5rem' }}>
+                          Donation Amount (POL/MATIC)
+                      </label>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <input 
+                            type="number" 
+                            placeholder="e.g. 5"
+                            value={donateAmounts[c.id] || ''}
+                            onChange={(e) => setDonateAmounts(prev => ({...prev, [c.id]: e.target.value}))}
+                            style={{ flex: 1, marginBottom: 0 }}
+                          />
+                          <button 
+                            className="btn" 
+                            style={{ background: 'linear-gradient(90deg, #00ff88, #00d0ff)', color: '#000', fontWeight: 'bold' }}
+                            onClick={() => handleDonate(c.id)}
+                          >
+                              Donate
+                          </button>
+                      </div>
+                  </div>
+              </div>
+          )) : (
+              <p style={{ textAlign: 'center', color: '#666', gridColumn: '1/-1' }}>Loading Campaigns...</p>
           )}
+      </div>
+      
+      {/* Transparency Portal */}
+      <div style={{ marginTop: '4rem', padding: '2rem', borderTop: '1px solid #333' }}>
+        <h2 style={{ fontSize: '2rem', textAlign: 'center', marginBottom: '2rem' }}>
+            🔍 Transparency Portal
+        </h2>
+        <TransparencyLogs />
       </div>
     </div>
   );
 }
 
-// Sub-component to fetch/show individual category data
-function CategoryCard({ id, writeContractAsync }: { id: number, writeContractAsync: any }) {
-    const { data: catData } = useReadContract({
-        address: RELIEF_FUND_ADDRESS as `0x${string}`,
-        abi: RELIEF_FUND_ABI,
-        functionName: 'categories',
-        args: [BigInt(id)],
-        query: { refetchInterval: 3000 }
-    });
+function TransparencyLogs() {
+    const [logs, setLogs] = useState<any[]>([]);
+    const publicClient = usePublicClient();
+    const chainId = useChainId();
+    const contracts = getContracts(chainId);
 
-    const [amount, setAmount] = useState('');
-    const [status, setStatus] = useState('');
+    useEffect(() => {
+        if (!publicClient) return;
 
-    if (!catData || !(catData as any)[3]) return null;
+        const fetchLogs = async () => {
+            try {
+                // Fetch 'AidDistributed' events
+                const logs = await publicClient.getContractEvents({
+                    address: contracts.RELIEF_FUND_ADDRESS as `0x${string}`,
+                    abi: RELIEF_FUND_ABI,
+                    eventName: 'AidDistributed',
+                    fromBlock: BigInt(0), // Scan from Genesis (or a specific block)
+                });
 
-    const name = (catData as any)[0];
-    const raised = formatEther((catData as any)[1]);
-    const distributed = formatEther((catData as any)[2]);
+                // Format logs
+                const formattedLogs = logs.map((log: any) => ({
+                    txHash: log.transactionHash,
+                    beneficiary: log.args.beneficiary,
+                    amount: formatEther(log.args.amount),
+                    blockNumber: log.blockNumber
+                })).reverse(); // Newest first
 
-    const handleDonateFlow = async () => {
-        if(!amount) return alert("Enter amount");
-        
-        setStatus("🔒 Connecting to Bybit P2P...");
-        await new Promise(r => setTimeout(r, 1000));
-        
-        setStatus(`💱 Converting ${amount} USD to rUSD...`);
-        await new Promise(r => setTimeout(r, 1000));
+                setLogs(formattedLogs);
+            } catch (e) {
+                console.error("Error fetching transparency logs:", e);
+            }
+        };
 
-        try {
-            setStatus("⛓️ Confirming On-Chain Transaction...");
-            await writeContractAsync({
-                address: RELIEF_FUND_ADDRESS as `0x${string}`,
-                abi: RELIEF_FUND_ABI,
-                functionName: 'donate',
-                args: [BigInt(id)],
-                value: parseEther(amount)
-            });
-            setStatus("✅ Donation Successful! Impact Tracked.");
-            setAmount('');
-            setTimeout(() => setStatus(''), 5000);
-        } catch(e: any) {
-            console.error(e);
-            setStatus("❌ Failed: " + (e.shortMessage || "User rejected"));
-        }
-    };
+        fetchLogs();
+    }, [publicClient]);
 
     return (
-        <div className="card" style={{ position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '4px', background: 'linear-gradient(90deg, #00d0ff, #00ff88)' }} />
-            <h3>{name}</h3>
-            <div style={{ margin: '1rem 0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                   <small style={{ color: '#888' }}>Raised</small>
-                   <div style={{ fontSize: '1.2rem', color: '#fff' }}>${Number(raised).toLocaleString()}</div>
-                </div>
-                <div>
-                   <small style={{ color: '#888' }}>Distributed</small>
-                   <div style={{ fontSize: '1.2rem', color: '#00ff88' }}>${Number(distributed).toLocaleString()}</div>
-                </div>
-            </div>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <input 
-                        placeholder="Amount (USD)" 
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
-                        style={{ marginBottom: 0, width: '100%' }}
-                    />
-                    <button 
-                      className="btn" 
-                      style={{ width: 'auto', background: '#00ff88', color: '#000', whiteSpace: 'nowrap' }} 
-                      onClick={handleDonateFlow}
-                    >
-                        Donate
-                    </button>
-                </div>
-                {status && (
-                    <div style={{ 
-                        fontSize: '0.8rem', 
-                        marginTop: '0.5rem', 
-                        color: status.includes('Failed') ? '#ff4444' : '#00ff88',
-                        background: 'rgba(0,0,0,0.3)',
-                        padding: '0.5rem',
-                        borderRadius: '4px'
-                    }}>
-                        {status}
-                    </div>
-                )}
-            </div>
+        <div style={{ background: '#111', borderRadius: '12px', border: '1px solid #333', overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', color: '#ccc' }}>
+                <thead style={{ background: '#222', color: '#fff' }}>
+                    <tr>
+                        <th style={{ padding: '1rem', textAlign: 'left' }}>Beneficiary</th>
+                        <th style={{ padding: '1rem', textAlign: 'left' }}>Amount Received</th>
+                        <th style={{ padding: '1rem', textAlign: 'left' }}>Proof (Tx Hash)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {logs.length > 0 ? logs.map((log, i) => (
+                        <tr key={i} style={{ borderBottom: '1px solid #222' }}>
+                            <td style={{ padding: '1rem', fontFamily: 'monospace', color: '#00d0ff' }}>
+                                {log.beneficiary.slice(0, 6)}...{log.beneficiary.slice(-4)}
+                            </td>
+                            <td style={{ padding: '1rem', color: '#00ff88', fontWeight: 'bold' }}>
+                                + {Number(log.amount).toFixed(2)} rUSD
+                            </td>
+                            <td style={{ padding: '1rem' }}>
+                                <a 
+                                    href={`https://amoy.polygonscan.com/tx/${log.txHash}`} 
+                                    target="_blank" 
+                                    rel="noreferrer"
+                                    style={{ color: '#aaa', textDecoration: 'none', fontSize: '0.9rem' }}
+                                >
+                                    {log.txHash.slice(0, 10)}... ↗
+                                </a>
+                            </td>
+                        </tr>
+                    )) : (
+                        <tr>
+                            <td colSpan={3} style={{ padding: '2rem', textAlign: 'center', color: '#666' }}>
+                                No distribution records found yet.
+                            </td>
+                        </tr>
+                    )}
+                </tbody>
+            </table>
         </div>
     );
 }

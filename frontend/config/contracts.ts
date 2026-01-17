@@ -1,7 +1,25 @@
-// Address placeholders - TO BE UPDATED AFTER DEPLOYMENT
-export const RELIEF_TOKEN_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-export const RELIEF_FUND_ADDRESS = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
-export const NETWORK_CHAIN_ID = 31337; // Hardhat Localhost
+// Address placeholders - Dynamically loaded from Environment
+import deployments from './deployments.json';
+
+// Default to Amoy if undefined, but allows overrides
+export const DEFAULT_CHAIN_ID = 80002; 
+
+export const getContracts = (chainId: number = DEFAULT_CHAIN_ID) => {
+    // Force string key for JSON lookup
+    const chainKey = chainId.toString() as keyof typeof deployments;
+    const config = deployments[chainKey] || deployments["80002"]; // Fallback to Amoy
+
+    return {
+        RELIEF_TOKEN_ADDRESS: config.RELIEF_TOKEN as `0x${string}`,
+        RELIEF_FUND_ADDRESS: config.RELIEF_FUND as `0x${string}`,
+        NETWORK_CHAIN_ID: chainId
+    };
+};
+
+export const RELIEF_TOKEN_ADDRESS = deployments["80002"].RELIEF_TOKEN; // Backwards compat (deprecated)
+export const RELIEF_FUND_ADDRESS = deployments["80002"].RELIEF_FUND;   // Backwards compat (deprecated)
+export const NETWORK_CHAIN_ID = 80002; // Backwards compat (deprecated)
+
 
 
 export const RELIEF_TOKEN_ABI = [
@@ -541,7 +559,7 @@ export const RELIEF_TOKEN_ABI = [
       "stateMutability": "view",
       "type": "function"
     }
-  ];
+  ] as const;
 
 export const RELIEF_FUND_ABI = [
     {
@@ -588,4 +606,4 @@ export const RELIEF_FUND_ABI = [
       "stateMutability": "view",
       "type": "function"
     }
-];
+] as const;

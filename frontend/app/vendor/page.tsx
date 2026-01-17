@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from 'react';
-import { useWriteContract, useAccount, useReadContract } from 'wagmi';
-import { RELIEF_FUND_ADDRESS, RELIEF_FUND_ABI, RELIEF_TOKEN_ADDRESS, RELIEF_TOKEN_ABI } from '../../config/contracts';
+import { useWriteContract, useAccount, useReadContract, useChainId } from 'wagmi';
+import { getContracts, RELIEF_FUND_ABI, RELIEF_TOKEN_ABI } from '../../config/contracts';
 import { parseEther, formatEther } from 'viem';
 import Navbar from '../components/Navbar';
 import { Html5QrcodeScanner, Html5Qrcode } from 'html5-qrcode';
@@ -13,28 +13,33 @@ export default function VendorDashboard() {
   const [showScanner, setShowScanner] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
+
+
+
   const { writeContractAsync } = useWriteContract();
+  const chainId = useChainId();
+  const contracts = getContracts(chainId);
 
   // 1. Fetch Vendor Balance
   const { data: balanceData } = useReadContract({
-    address: RELIEF_TOKEN_ADDRESS as `0x${string}`,
+    address: contracts.RELIEF_TOKEN_ADDRESS as `0x${string}`,
     abi: RELIEF_TOKEN_ABI,
     functionName: 'balanceOf',
-    args: [address],
+    args: [address as `0x${string}`],
     query: { enabled: !!address, refetchInterval: 3000 }
   });
 
   // 2. Fetch Category
   const { data: categoryId } = useReadContract({
-    address: RELIEF_FUND_ADDRESS as `0x${string}`,
+    address: contracts.RELIEF_FUND_ADDRESS as `0x${string}`,
     abi: RELIEF_FUND_ABI,
     functionName: 'entityCategory',
-    args: [address],
+    args: [address as `0x${string}`],
   });
 
   // 3. Get Category Name
   const { data: categoryData } = useReadContract({
-      address: RELIEF_FUND_ADDRESS as `0x${string}`,
+      address: contracts.RELIEF_FUND_ADDRESS as `0x${string}`,
       abi: RELIEF_FUND_ABI,
       functionName: 'categories',
       args: [categoryId ? BigInt(categoryId as bigint) : BigInt(0)],
@@ -106,12 +111,12 @@ export default function VendorDashboard() {
         
         // 1. Contract Interaction
         const tx = await writeContractAsync({
-            address: RELIEF_FUND_ADDRESS as `0x${string}`,
+            address: contracts.RELIEF_FUND_ADDRESS as `0x${string}`,
             abi: RELIEF_FUND_ABI,
             functionName: 'processOfflineTransaction',
             args: [
                 voucher.beneficiary,
-                parseEther(voucher.amount.toString()),
+                BigInt(voucher.amount), // FIX: QR data is already in Wei. Do NOT parseEther again.
                 BigInt(voucher.nonce),
                 voucher.signature
             ]

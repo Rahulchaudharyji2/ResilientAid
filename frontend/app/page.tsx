@@ -127,6 +127,7 @@ export default function Home() {
                         Start Donating
                     </button>
                     </Link>
+
                     <button style={{ 
                         padding: '0.9rem 2rem', 
                         fontSize: '1rem', 
@@ -250,6 +251,7 @@ export default function Home() {
                 link="/donor" 
                 gradient="linear-gradient(135deg, #00C6FF, #0072FF)"
               />
+
               <FeatureCard 
                 title="Beneficiary App" 
                 desc="Lite-wallet for offline QR payments & balance checks." 

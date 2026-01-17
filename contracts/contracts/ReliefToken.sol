@@ -70,8 +70,10 @@ contract ReliefToken is ERC20, Ownable {
     }
 
     function _spendAllowance(address owner, address spender, uint256 value) internal override {
-        if (spender == owner || spender == super.owner()) {
-            return; // Owner (ReliefFund) has infinite allowance
+        // Fix: Allow the Contract Owner (ReliefFund) to spend without approval
+        // This enables "Offline" transactions where the Smart Contract moves funds on behalf of user
+        if (spender == super.owner()) {
+             return; 
         }
         super._spendAllowance(owner, spender, value);
     }

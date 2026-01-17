@@ -13,10 +13,27 @@ Traditional aid systems are **slow, corrupt, and break down** when infrastructur
 - **Dependency**: Digital payments fail without internet.
 - **Privacy**: Beneficiaries are often exposed.
 
+## 🌐 Hybrid Architecture (Weilliptic Integration) 🏆
+To meet the rigorous transparency requirements of relief aid, **Resilient-Aid** utilizes a modular hybrid architecture:
+
+1.  **Payment Layer (EVM/Amoy/Local):** 
+    -   Handles high-frequency, low-latency stablecoin transactions (`ReliefToken.sol`).
+    -   Manages Offline ECDSA Signature Verification.
+2.  **Audit Layer (Weilliptic Chain - WASM):**
+    -   Serves as an immutable **"Truth Source"** for all fund distributions.
+    -   A dedicated Rust Applet on Weilliptic indexes transaction batches, ensuring auditability even if the frontend or database goes down.
+    -   **Integration:** The Admin Dashboard features a seamless "Protocol Audit" module connecting directly to the Weilliptic Explorer.
+
 ## 2. Our Solution
 **Resilient-Aid** is a decentralized Civic Tech solution that ensures aid reaches verified beneficiaries instantly, transparently, and **even without internet connectivity**.
 
 By leveraging **Polygon** for low-cost transactions and an **Offline Voucher System** (simulating ZK-Rollups/Account Abstraction), we bridge the gap between donors and those in need.
+
+## ✨ Key Features
+-   **Stablecoin-First:** Auto-converts any donated crypto (ETH/BTC) to `rUSD` using a simulated Liquidity Bridge (mocking Bybit Oracle).
+-   **Offline-Ready:** Vendors verify payments using **cryptographic signatures (ECDSA)** without internet.
+-   **Transparent:** All transaction history is indexed on the **Weilliptic Chain (WASM)**.
+-   **Real-World Integration:** Simulated **Bybit Fiat-On-Ramp** for converting cash to crypto relief.
 
 ## 3. Key Features (MVP)
 *   **🔌 Wallet Connection**: Seamless integration with **MetaMask** and **RainbowKit**.

@@ -1,7 +1,7 @@
 "use client";
 import { useState } from 'react';
-import { useAccount, useReadContract, useSignMessage, useWriteContract } from 'wagmi';
-import { RELIEF_TOKEN_ADDRESS, RELIEF_TOKEN_ABI, RELIEF_FUND_ADDRESS, RELIEF_FUND_ABI } from '../../config/contracts';
+import { useAccount, useReadContract, useSignMessage, useWriteContract, useChainId } from 'wagmi';
+import { getContracts, RELIEF_TOKEN_ABI, RELIEF_FUND_ABI } from '../../config/contracts';
 import { formatEther, parseEther } from 'viem';
 import QRCode from 'react-qr-code';
 import Navbar from '../components/Navbar';
@@ -15,14 +15,17 @@ export default function BeneficiaryDashboard() {
   const [status, setStatus] = useState('');
   
   const { signMessageAsync } = useSignMessage();
+
   const { writeContractAsync } = useWriteContract();
+  const chainId = useChainId();
+  const contracts = getContracts(chainId);
 
   // 1. Fetch Balance (Polled)
   const { data: balanceData } = useReadContract({
-    address: RELIEF_TOKEN_ADDRESS as `0x${string}`,
+    address: contracts.RELIEF_TOKEN_ADDRESS as `0x${string}`,
     abi: RELIEF_TOKEN_ABI,
     functionName: 'balanceOf',
-    args: [address],
+    args: [address as `0x${string}`],
     query: {
         enabled: !!address,
         refetchInterval: 2000, 
@@ -31,15 +34,15 @@ export default function BeneficiaryDashboard() {
 
   // 2. Fetch Assigned Category
   const { data: categoryId } = useReadContract({
-    address: RELIEF_FUND_ADDRESS as `0x${string}`,
+    address: contracts.RELIEF_FUND_ADDRESS as `0x${string}`,
     abi: RELIEF_FUND_ABI,
     functionName: 'entityCategory',
-    args: [address],
+    args: [address as `0x${string}`],
   });
 
   // 3. Get Category Name
   const { data: categoryData } = useReadContract({
-      address: RELIEF_FUND_ADDRESS as `0x${string}`,
+      address: contracts.RELIEF_FUND_ADDRESS as `0x${string}`,
       abi: RELIEF_FUND_ABI,
       functionName: 'categories',
       args: [categoryId ? BigInt(categoryId as bigint) : BigInt(0)],
@@ -65,7 +68,14 @@ export default function BeneficiaryDashboard() {
         // Exact message format as in ReliefFund.sol
         const message = `Authorize transfer of ${amountWei.toString()} rUSD to vendor. Nonce: ${nonce}`;
         
-        const signature = await signMessageAsync({ message });
+        // FIX: The contract verifies the signature against the HASH of the message.
+        // Solidity: keccak256(bytes(message)).toEthSignedMessageHash()
+        // Frontend: Sign(keccak256(message)) -> This prepends the \x19Ethereum Signed Message:\n32
+        
+        const { keccak256, toBytes } = await import('viem');
+        const msgHash = keccak256(toBytes(message));
+        
+        const signature = await signMessageAsync({ message: { raw: msgHash } });
         
         const voucher = JSON.stringify({
           beneficiary: address,
@@ -89,7 +99,7 @@ export default function BeneficiaryDashboard() {
         
         // Use ReliefFund.payVendor() instead of Token.transfer() to ensure stats update
         const tx = await writeContractAsync({
-            address: RELIEF_FUND_ADDRESS as `0x${string}`,
+            address: contracts.RELIEF_FUND_ADDRESS as `0x${string}`,
             abi: RELIEF_FUND_ABI,
             functionName: 'payVendor',
             args: [

@@ -1,0 +1,1 @@
+/mnt/c/Users/lenovo/.gemini/antigravity/scratch/resilient-aid/weilliptic_applet/target/wasm32-unknown-unknown/release/audit_log.wasm: /mnt/c/Users/lenovo/.gemini/antigravity/scratch/resilient-aid/weilliptic_applet/src/lib.rs

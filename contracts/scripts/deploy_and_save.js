@@ -8,11 +8,12 @@ async function main() {
   console.log("Deploying contracts with the account:", deployer.address);
 
   // 1. Deploy ReliefToken
-  // 1. Attach to existing ReliefToken
-  const tokenAddress = "0xFBFC72329eB24C43745fCA901a4b1c65133819B9";
+  // 1. Deploy ReliefToken (FRESH DEPLOYMENT to apply logic fixes)
   const ReliefToken = await hre.ethers.getContractFactory("ReliefToken");
-  const token = ReliefToken.attach(tokenAddress);
-  console.log("Using existing ReliefToken at:", tokenAddress);
+  const token = await ReliefToken.deploy(deployer.address);
+  await token.waitForDeployment();
+  const tokenAddress = await token.getAddress();
+  console.log("ReliefToken deployed to:", tokenAddress);
 
   // 2. Deploy ReliefFund
   const ReliefFund = await hre.ethers.getContractFactory("ReliefFund");

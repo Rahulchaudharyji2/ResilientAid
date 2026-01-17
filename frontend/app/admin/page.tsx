@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { useWriteContract, useAccount, useReadContract } from 'wagmi';
-import { RELIEF_FUND_ADDRESS, RELIEF_FUND_ABI, RELIEF_TOKEN_ADDRESS, RELIEF_TOKEN_ABI } from '../../config/contracts';
+import { useWriteContract, useAccount, useReadContract, useReadContracts, usePublicClient, useChainId } from 'wagmi';
+import { getContracts, RELIEF_FUND_ABI, RELIEF_TOKEN_ABI } from '../../config/contracts';
 import { parseEther, formatEther } from 'viem';
 import Navbar from '../components/Navbar';
 
@@ -12,6 +12,34 @@ export default function AdminDashboard() {
   const [status, setStatus] = useState('');
   const [faucetAmount, setFaucetAmount] = useState('1000');
   
+  // Real-time Oracle State
+  const [conversionRates, setConversionRates] = useState<{[key: string]: number}>({ 'ETH': 3000, 'BTC': 50000, 'SOL': 100 });
+  
+  // Fetch Real-time Prices (Coinbase API)
+  useEffect(() => {
+    const fetchRates = async () => {
+        try {
+            const [eth, btc, sol] = await Promise.all([
+                fetch('https://api.coinbase.com/v2/prices/ETH-USD/spot').then(r => r.json()),
+                fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot').then(r => r.json()),
+                fetch('https://api.coinbase.com/v2/prices/SOL-USD/spot').then(r => r.json())
+            ]);
+            
+            setConversionRates({
+                'ETH': parseFloat(eth.data.amount),
+                'BTC': parseFloat(btc.data.amount),
+                'SOL': parseFloat(sol.data.amount)
+            });
+            console.log("Oracle Rates Updated:", eth.data.amount, btc.data.amount);
+        } catch (e) {
+            console.error("Oracle Fetch Failed, using fallback rates", e);
+        }
+    };
+    fetchRates();
+    const interval = setInterval(fetchRates, 30000); // Update every 30s
+    return () => clearInterval(interval);
+  }, []);
+  
   // Category Management
   const [newCategoryName, setNewCategoryName] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('1'); // Default to ID 1
@@ -20,8 +48,13 @@ export default function AdminDashboard() {
   const { writeContractAsync } = useWriteContract();
 
   // Fetch Category Count
+  // Dynamic Contracts
+  const chainId = useChainId();
+  const contracts = getContracts(chainId);
+
+  // Use this address for all hooks
   const { data: catCount } = useReadContract({
-      address: RELIEF_FUND_ADDRESS as `0x${string}`,
+      address: contracts.RELIEF_FUND_ADDRESS as `0x${string}`,
       abi: RELIEF_FUND_ABI,
       functionName: 'categoryCount',
   });
@@ -29,31 +62,63 @@ export default function AdminDashboard() {
   // State to hold fetched categories
   const [categories, setCategories] = useState<any[]>([]);
 
-  // Effect to re-fetch categories when catCount changes
-  const { data: cat1 } = useReadContract({ address: RELIEF_FUND_ADDRESS as `0x${string}`, abi: RELIEF_FUND_ABI, functionName: 'categories', args: [BigInt(1)], query: { enabled: (catCount as bigint) >= 1n } });
-  const { data: cat2 } = useReadContract({ address: RELIEF_FUND_ADDRESS as `0x${string}`, abi: RELIEF_FUND_ABI, functionName: 'categories', args: [BigInt(2)], query: { enabled: (catCount as bigint) >= 2n } });
-  const { data: cat3 } = useReadContract({ address: RELIEF_FUND_ADDRESS as `0x${string}`, abi: RELIEF_FUND_ABI, functionName: 'categories', args: [BigInt(3)], query: { enabled: (catCount as bigint) >= 3n } });
-  
-  // Aggregate active categories
+  // Fetch Categories 1 to 10 (Hackathon Limit)
+  const categoryIds = Array.from({ length: 10 }, (_, i) => BigInt(i + 1));
+  const { data: categoriesData, refetch: refetchCats } = useReadContracts({
+    contracts: categoryIds.map(id => ({
+        address: contracts.RELIEF_FUND_ADDRESS as `0x${string}`,
+        abi: RELIEF_FUND_ABI,
+        functionName: 'categories',
+        args: [id],
+    })),
+  });
+
   useEffect(() => {
-      const cats = [];
-      if (cat1 && (cat1 as any)[3]) cats.push({ id: 1, name: (cat1 as any)[0], raised: (cat1 as any)[1], distributed: (cat1 as any)[2] });
-      if (cat2 && (cat2 as any)[3]) cats.push({ id: 2, name: (cat2 as any)[0], raised: (cat2 as any)[1], distributed: (cat2 as any)[2] });
-      if (cat3 && (cat3 as any)[3]) cats.push({ id: 3, name: (cat3 as any)[0], raised: (cat3 as any)[1], distributed: (cat3 as any)[2] });
-      setCategories(cats);
-  }, [cat1, cat2, cat3]);
+      if (categoriesData) {
+          const cats: any[] = [];
+          categoriesData.forEach((result: any, index: number) => {
+              if (result.status === 'success' && result.result && result.result[3] === true) { // [3] is 'exists' boolean
+                  cats.push({
+                      id: index + 1,
+                      name: result.result[0],
+                      raised: result.result[1],
+                      distributed: result.result[2]
+                  });
+              }
+          });
+          setCategories(cats);
+      }
+  }, [categoriesData, catCount]);
+
+  const publicClient = usePublicClient();
 
   const handleAddCategory = async () => {
+      if (!newCategoryName) return alert("Enter a name");
       try {
-          setStatus(`Creating Category: ${newCategoryName}...`);
-          await writeContractAsync({
-              address: RELIEF_FUND_ADDRESS as `0x${string}`,
+          setStatus(`Creating Category: ${newCategoryName}... (Please Wait for Confirmation)`);
+          
+          const hash = await writeContractAsync({
+              address: contracts.RELIEF_FUND_ADDRESS as `0x${string}`,
               abi: RELIEF_FUND_ABI,
               functionName: 'addCategory',
               args: [newCategoryName],
           });
-          setStatus(`Category '${newCategoryName}' created!`);
+
+          setStatus(`Transaction Sent! Waiting for Block Confirmation...`);
+          
+          if (publicClient) {
+              await publicClient.waitForTransactionReceipt({ hash });
+          }
+
+          setStatus(`Category '${newCategoryName}' Confirmed on Chain!`);
           setNewCategoryName('');
+          
+          // Small delay to allow node indexing
+          setTimeout(() => {
+              console.log("Refetching Categories...");
+              refetchCats(); 
+          }, 5000);
+          
       } catch (error: any) {
           console.error(error);
           setStatus(`Error: ${error.shortMessage || error.message}`);
@@ -64,10 +129,10 @@ export default function AdminDashboard() {
     try {
       setStatus(`Whitelisting Beneficiary ${beneficiary} to Category ${selectedCategory}...`);
       await writeContractAsync({
-        address: RELIEF_FUND_ADDRESS as `0x${string}`,
+        address: contracts.RELIEF_FUND_ADDRESS as `0x${string}`,
         abi: RELIEF_FUND_ABI,
         functionName: 'whitelistBeneficiary',
-        args: [beneficiary, BigInt(selectedCategory)],
+        args: [beneficiary as `0x${string}`, BigInt(selectedCategory)],
       });
       setStatus('Beneficiary Whitelisted successfully!');
     } catch (error: any) {
@@ -80,10 +145,10 @@ export default function AdminDashboard() {
     try {
       setStatus(`Whitelisting Vendor ${vendor} to Category ${selectedCategory}...`);
       await writeContractAsync({
-        address: RELIEF_FUND_ADDRESS as `0x${string}`,
+        address: contracts.RELIEF_FUND_ADDRESS as `0x${string}`,
         abi: RELIEF_FUND_ABI,
         functionName: 'whitelistVendor',
-        args: [vendor, BigInt(selectedCategory)],
+        args: [vendor as `0x${string}`, BigInt(selectedCategory)],
       });
       setStatus('Vendor Whitelisted successfully!');
     } catch (error: any) {
@@ -100,10 +165,10 @@ export default function AdminDashboard() {
       setStatus(`STEP 1: Ensuring Admin is whitelisted for Category 1...`);
       try {
           await writeContractAsync({
-            address: RELIEF_FUND_ADDRESS as `0x${string}`,
+            address: contracts.RELIEF_FUND_ADDRESS as `0x${string}`,
             abi: RELIEF_FUND_ABI,
             functionName: 'whitelistBeneficiary',
-            args: [address, BigInt(1)], 
+            args: [address as `0x${string}`, BigInt(1)], 
           });
       } catch (e) {
           console.log("Whitelist attempt skipped (might already be whitelisted)", e);
@@ -112,10 +177,10 @@ export default function AdminDashboard() {
       // Step 2: Mint/Distribute
       setStatus(`STEP 2: Minting ${faucetAmount} rUSD to Admin...`);
       await writeContractAsync({
-        address: RELIEF_FUND_ADDRESS as `0x${string}`,
+        address: contracts.RELIEF_FUND_ADDRESS as `0x${string}`,
         abi: RELIEF_FUND_ABI,
         functionName: 'distributeAid',
-        args: [[address], parseEther(faucetAmount)],
+        args: [[address as `0x${string}`], parseEther(faucetAmount)],
       });
       setStatus(`Success! Minted ${faucetAmount} rUSD to Admin (Category 1).`);
     } catch (error: any) {
@@ -127,6 +192,7 @@ export default function AdminDashboard() {
   return (
     <div className="container" style={{ paddingTop: '100px' }}>
       <Navbar />
+      
       <header>
         <h1>Admin Console</h1>
         <p>Manage Categories & Participants</p>
@@ -152,8 +218,8 @@ export default function AdminDashboard() {
                       <div key={c.id} style={{ background: '#222', padding: '1rem', borderRadius: '8px', border: '1px solid #444' }}>
                           <h4 style={{ margin: 0, color: '#00d0ff' }}>#{c.id} {c.name}</h4>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', fontSize: '0.9rem' }}>
-                              <span style={{ color: '#00ff88' }}>Raised: {formatEther(c.raised || 0n)}</span>
-                              <span style={{ color: 'orange' }}>Dist: {formatEther(c.distributed || 0n)}</span>
+                              <span style={{ color: '#00ff88' }}>Raised: {formatEther(c.raised || BigInt(0))}</span>
+                              <span style={{ color: 'orange' }}>Dist: {formatEther(c.distributed || BigInt(0))}</span>
                           </div>
                           <div style={{ width: '100%', height: '4px', background: '#444', marginTop: '0.5rem', borderRadius: '2px' }}>
                               <div style={{ 
@@ -261,10 +327,10 @@ export default function AdminDashboard() {
                 try {
                      setStatus(`Distributing ${faucetAmount} rUSD to ${beneficiary} (Category #${activeDistId})...`);
                      await writeContractAsync({
-                        address: RELIEF_FUND_ADDRESS as `0x${string}`,
+                        address: contracts.RELIEF_FUND_ADDRESS as `0x${string}`,
                         abi: RELIEF_FUND_ABI,
                         functionName: 'distributeAid',
-                        args: [[beneficiary], parseEther(faucetAmount)],
+                        args: [[beneficiary as `0x${string}`], parseEther(faucetAmount)],
                     });
                     setStatus("Aid Distributed Successfully!");
                 } catch (e: any) {
@@ -283,121 +349,180 @@ export default function AdminDashboard() {
 
         {/* 5. Liquidity Bridge (Stablecoin Swap) */}
       <div className="card" style={{ marginTop: '2rem', border: '1px solid #7000ff' }}>
-          <h3>5. Liquidity Bridge (Bybit Exchange)</h3>
+          <h3>5. Liquidity Bridge </h3>
           <p style={{ color: '#aaa', marginBottom: '1rem' }}>Simulate converting incoming Crypto Donations (ETH/BTC) into rUSD Stablecoin.</p>
           
-          <div className="flex-responsive" style={{ 
-              alignItems: 'flex-end',
-              marginTop: '1rem' 
+          <div style={{ 
+              display: 'flex', 
+              flexWrap: 'wrap', 
+              gap: '1rem', 
+              alignItems: 'flex-end' 
           }}>
               {/* Asset Select */}
-              <div style={{ flex: '1 1 200px' }}>
+              <div style={{ flex: '1 1 220px' }}>
                  <label style={{ display: 'block', fontSize: '0.8rem', color: '#888', marginBottom: '0.5rem' }}>Incoming Asset</label>
-                 <select style={{ width: '100%', padding: '0.8rem', background: '#111', color: '#fff', border: '1px solid #444', borderRadius: '8px' }}>
-                     <option>ETH (Ethereum)</option>
-                     <option>BTC (Bitcoin)</option>
-                     <option>SOL (Solana)</option>
+                 <select 
+                    id="swap-asset"
+                    style={{ 
+                        width: '100%', 
+                        padding: '0.8rem', 
+                        background: '#111', 
+                        color: '#fff', 
+                        border: '1px solid #444', 
+                        borderRadius: '8px',
+                        height: '45px'
+                    }}
+                    onChange={(e) => {
+                        const asset = e.target.value;
+                        const price = conversionRates[asset] || 0;
+                        const amt = (document.getElementById('swap-amount') as HTMLInputElement).value;
+                        (document.getElementById('swap-output') as HTMLInputElement).value = (parseFloat(amt) * price).toFixed(2);
+                    }}
+                 >
+                     <option value="ETH">ETH (Ethereum) - ${conversionRates['ETH']?.toFixed(2)}</option>
+                     <option value="BTC">BTC (Bitcoin) - ${conversionRates['BTC']?.toFixed(2)}</option>
+                     <option value="SOL">SOL (Solana) - ${conversionRates['SOL']?.toFixed(2)}</option>
                  </select>
               </div>
               
               {/* Amount Input */}
-               <div style={{ flex: '1 1 150px' }}>
+               <div style={{ flex: '1 1 120px' }}>
                  <label style={{ display: 'block', fontSize: '0.8rem', color: '#888', marginBottom: '0.5rem' }}>Amount</label>
                  <input 
-                    placeholder="e.g. 1.5" 
+                    placeholder="1" 
                     defaultValue="1"
                     id="swap-amount"
-                    style={{ width: '100%', marginBottom: 0, padding: '0.8rem' }}
+                    type="number"
+                    style={{ 
+                        width: '100%', 
+                        marginBottom: 0, 
+                        padding: '0.8rem',
+                        height: '45px' 
+                    }}
+                    onChange={(e) => {
+                        const amt = e.target.value;
+                        const asset = (document.getElementById('swap-asset') as HTMLSelectElement).value;
+                        const price = conversionRates[asset] || 0;
+                        (document.getElementById('swap-output') as HTMLInputElement).value = (parseFloat(amt) * price).toFixed(2);
+                    }}
                  />
               </div>
 
-              {/* Arrow */}
-              <div style={{ fontSize: '1.5rem', color: '#666', paddingBottom: '0.5rem' }}>
+              {/* Arrow (Hidden on very small screens if needed, or focused) */}
+              <div style={{ 
+                  flex: '0 0 auto', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  paddingBottom: '0.8rem',
+                  fontSize: '1.5rem', 
+                  color: '#666' 
+              }}>
                   ➜
               </div>
               
               {/* Receive Input */}
-               <div style={{ flex: '1 1 250px' }}>
+               <div style={{ flex: '1 1 220px' }}>
                  <label style={{ display: 'block', fontSize: '0.8rem', color: '#888', marginBottom: '0.5rem' }}>Receive (rUSD)</label>
                  <input 
                     readOnly
-                    value="Calculated by Bybit Oracle..."
                     id="swap-output"
-                    style={{ width: '100%', marginBottom: 0, padding: '0.8rem', background: '#222', color: '#00ff88', border: '1px solid #00ff88' }}
+                    placeholder="Calculating..."
+                    style={{ 
+                        width: '100%', 
+                        marginBottom: 0, 
+                        padding: '0.8rem', 
+                        background: '#222', 
+                        color: '#00ff88', 
+                        border: '1px solid #00ff88',
+                        height: '45px',
+                        fontWeight: 'bold'
+                    }}
                  />
               </div>
 
               {/* Button */}
-              <button className="btn" style={{ background: '#7000ff', flex: '1 1 auto', minWidth: '200px' }} onClick={async () => {
-                  const amount = (document.getElementById('swap-amount') as HTMLInputElement).value;
-                  const output = document.getElementById('swap-output') as HTMLInputElement;
-                  
-                  // Mock Oracle Rate
-                  const rate = 3000; 
-                  const rUSD = parseFloat(amount) * rate;
-                  
-                  // Validation
-                  if (!address) {
-                      alert("Please connect your wallet first!");
-                      return;
-                  }
-                  if (!amount || isNaN(parseFloat(amount))) {
-                      alert("Please enter a valid amount!");
-                      return;
-                  }
-
-                  setStatus("Initiating Bybit Swap... Check Wallet to Confirm.");
-                  
-                  try {
-                      // 1. Contract Call
-                      const txHash = await writeContractAsync({
-                        address: RELIEF_FUND_ADDRESS as `0x${string}`,
-                        abi: RELIEF_FUND_ABI,
-                        functionName: 'distributeAid',
-                        args: [[address], parseEther(rUSD.toString())],
-                      });
+              <div style={{ flex: '1 1 100%' }}>
+                  <button className="btn" style={{ 
+                      background: 'linear-gradient(90deg, #7000ff, #bd00ff)', 
+                      width: '100%',
+                      marginTop: '1rem',
+                      padding: '1rem',
+                      fontSize: '1.1rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '1px'
+                  }} onClick={async () => {
+                      const amount = (document.getElementById('swap-amount') as HTMLInputElement).value;
+                      const asset = (document.getElementById('swap-asset') as HTMLSelectElement).value;
+                      const rate = conversionRates[asset];
                       
-                      setStatus(`Transaction Sent! Hash: ${txHash}`);
-
-                      // 2. Log to DB (Fire and Forget)
-                      fetch('/api/transaction', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                              txHash: txHash,
-                              from: address,
-                              to: RELIEF_FUND_ADDRESS,
-                              amount: rUSD.toString(),
-                              type: 'MAX_SWAP_NB', // Special type for 'Bridge Swap'
-                              status: 'CONFIRMED',
-                              tokenSymbol: 'rUSD'
-                          })
-                      }).catch(dbErr => console.warn("DB Background Log failed", dbErr));
-
-                      alert(`Swap Successful! Minted ${rUSD} rUSD.`);
-                      setStatus(`Swap Complete! Minted ${rUSD} rUSD backed by ${amount} ETH.`);
-                  } catch (e: any) {
-                      console.error("Swap Error:", e);
-                      // User rejected or Contract reverted
-                      if (e.message.includes("User rejected")) {
-                          setStatus("Swap Cancelled by User");
-                      } else {
-                          setStatus(`Swap Failed: ${e.message || "Unknown Error"}`);
-                          alert(`Error: ${e.message || "Transaction failed"}`);
+                      if (!rate) {
+                          alert("Oracle rates not loaded yet. Please wait.");
+                          return;
                       }
-                  }
-              }}>
-                  {status.includes("Initiating") ? <span className="animate-pulse">⏳ Waiting for Wallet...</span> : "🔄 EXECUTE SWAP & MINT"}
-              </button>
+
+                      const rUSD = parseFloat(amount) * rate;
+                      
+                      // Validation
+                      if (!address) {
+                          alert("Please connect your wallet first!");
+                          return;
+                      }
+                      if (!amount || isNaN(parseFloat(amount))) {
+                          alert("Please enter a valid amount!");
+                          return;
+                      }
+
+                      setStatus(`Initiating ${asset} Swap at $${rate}/unit...`);
+                      
+                      try {
+                          // 1. Contract Call
+                          const txHash = await writeContractAsync({
+                            address: contracts.RELIEF_FUND_ADDRESS as `0x${string}`,
+                            abi: RELIEF_FUND_ABI,
+                            functionName: 'distributeAid',
+                            args: [[address as `0x${string}`], parseEther(rUSD.toFixed(18))], // Fix decimals
+                          });
+                          
+                          setStatus(`Transaction Sent! Hash: ${txHash}`);
+
+                          // 2. Log to DB (Fire and Forget)
+                          fetch('/api/transaction', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                  txHash: txHash,
+                                  from: address,
+                                  to: contracts.RELIEF_FUND_ADDRESS,
+                                  amount: rUSD.toString(),
+                                  type: 'MAX_SWAP_NB', // Special type for 'Bridge Swap'
+                                  status: 'CONFIRMED',
+                                  tokenSymbol: 'rUSD'
+                              })
+                          }).catch(dbErr => console.warn("DB Background Log failed", dbErr));
+
+                          alert(`Swap Successful! Minted ${rUSD.toFixed(2)} rUSD.`);
+                          setStatus(`Swap Complete! Minted ${rUSD.toFixed(2)} rUSD backed by ${amount} ${asset}.`);
+                      } catch (e: any) {
+                          console.error("Swap Error:", e);
+                          // User rejected or Contract reverted
+                          if (e.message.includes("User rejected")) {
+                              setStatus("Swap Cancelled by User");
+                          } else {
+                              setStatus(`Swap Failed: ${e.message || "Unknown Error"}`);
+                              alert(`Error: ${e.shortMessage || e.message}`);
+                          }
+                      }
+                  }}>
+                      {status.includes("Initiating") ? <span className="animate-pulse">⏳ Processing...</span> : "🔄 Execute Liquidity Swap"}
+                  </button>
+              </div>
           </div>
       </div>
 
       {/* 6. Weilliptic Hybrid Integration */}
       <div className="card" style={{ marginTop: '2rem', border: '1px solid #00ff88', background: 'rgba(0, 255, 136, 0.05)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-            <div style={{ background: '#00ff88', color: '#000', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: 'bold', fontSize: '0.8rem' }}>
-                HYBRID DEPLOYMENT
-            </div>
             <h3 style={{ margin: 0 }}>6. Protocol Audit (Weilliptic Chain)</h3>
           </div>
           
