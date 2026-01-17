@@ -121,31 +121,65 @@ export default function BeneficiaryDashboard() {
     <div className="container" style={{ paddingTop: '100px' }}>
       <Navbar />
       <header>
-        <h1>Beneficiary Wallet</h1>
-        <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
-            <div className="card" style={{ padding: '1rem', border: '1px solid #00ff88' }}>
-                <small>Balance</small>
-                <h3>{formattedBalance} rUSD</h3>
+        <h1>My Relief Card (Abha ID)</h1>
+        
+        {/* Digital Identity Card */}
+        <div style={{ 
+            background: 'linear-gradient(135deg, #004e92, #000428)', 
+            borderRadius: '16px', 
+            padding: '2rem', 
+            maxWidth: '400px',
+            color: 'white',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+            marginBottom: '2rem',
+            border: '1px solid rgba(255,255,255,0.1)',
+            position: 'relative'
+        }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                <span style={{ fontSize: '1.2rem', fontWeight: 'bold', letterSpacing: '1px' }}>ABHA RELIEF</span>
+                <span style={{ background: 'rgba(255,255,255,0.2)', padding: '0.2rem 0.8rem', borderRadius: '12px', fontSize: '0.8rem' }}>GOVT AID</span>
             </div>
-            <div className="card" style={{ padding: '1rem', border: '1px solid #00d0ff' }}>
-                 <small>Your Relief Category</small>
-                 <h3>{categoryName} (ID: {categoryId?.toString() || '0'})</h3>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+                <small style={{ color: '#aaa', fontSize: '0.7rem', textTransform: 'uppercase' }}>Beneficiary Name / Address</small>
+                <div style={{ fontFamily: 'monospace', fontSize: '0.9rem', color: '#fff' }}>
+                    {address ? `${address.substring(0, 16)}...` : 'Connecting...'}
+                </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                 <div>
+                    <small style={{ color: '#aaa', fontSize: '0.7rem', textTransform: 'uppercase' }}>Category</small>
+                    <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#00d0ff' }}>{categoryName}</div>
+                 </div>
+                 <div style={{ textAlign: 'right' }}>
+                    <small style={{ color: '#aaa', fontSize: '0.7rem', textTransform: 'uppercase' }}>Available Credits</small>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#00ff88' }}>{formattedBalance} <span style={{ fontSize: '0.8rem' }}>rUSD</span></div>
+                 </div>
             </div>
         </div>
       </header>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', marginTop: '2rem' }}>
-        {/* Offline Payment */}
+        {/* Offline Payment renamed to Benefit utilization */}
         <div className="card">
-            <h2>Offline Payment (QR)</h2>
-            <p>Generate a QR code to pay a Vendor in your category without internet.</p>
-            <input 
-              type="number" 
-              value={voucherAmount}
-              onChange={(e) => setVoucherAmount(e.target.value)}
-              placeholder="Amount (rUSD)"
-            />
-            <button className="btn" onClick={handleGenerateVoucher}>Generate QR Voucher</button>
+            <h2>Utilize Benefits</h2>
+            <p style={{ color: '#bbb' }}>To claim items from <strong>ANY verified vendor</strong>, generating a one-time authorized QR code below.</p>
+            
+            <div style={{ background: '#222', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
+                 <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: '#888' }}>Value to Redeem (rUSD)</label>
+                 <input 
+                  type="number" 
+                  value={voucherAmount}
+                  onChange={(e) => setVoucherAmount(e.target.value)}
+                  placeholder="e.g. 50"
+                  style={{ fontSize: '1.2rem', fontWeight: 'bold' }}
+                />
+            </div>
+
+            <button className="btn" style={{ width: '100%', background: '#ff007a', border: 'none' }} onClick={handleGenerateVoucher}>
+                🎟️ Generate Benefit QR
+            </button>
             
             {generatedVoucher && (
               <div style={{ marginTop: '1rem', background: 'white', padding: '1rem', borderRadius: '8px', textAlign: 'center' }}>

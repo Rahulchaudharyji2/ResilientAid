@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useWriteContract, useAccount, useReadContract, useReadContracts, usePublicClient, useChainId } from 'wagmi';
-import { getContracts, RELIEF_FUND_ABI, RELIEF_TOKEN_ABI } from '../../config/contracts';
+import { getContracts, RELIEF_FUND_ABI, RELIEF_TOKEN_ABI, RELIEF_PASS_ABI } from '../../config/contracts';
 import { parseEther, formatEther } from 'viem';
 import Navbar from '../components/Navbar';
 
@@ -253,7 +253,36 @@ export default function AdminDashboard() {
             onChange={(e) => setBeneficiary(e.target.value)}
           />
           <button className="btn" onClick={handleWhitelistBeneficiary}>Add Beneficiary</button>
+          
+          <div style={{ marginTop: '1rem', borderTop: '1px solid #444', paddingTop: '1rem' }}>
+              <h4 style={{ margin: '0 0 0.5rem 0', color: '#00d0ff' }}>Soulbound Identity</h4>
+              <button className="btn" style={{ background: '#004e92', borderColor: '#00d0ff' }} onClick={async () => {
+                  if (!contracts.RELIEF_PASS_ADDRESS) return alert("ReliefPass Contract not found (Deploy to Amoy/Localhost first!)");
+                  
+                  try {
+                      setStatus(`Issuing Relief Pass (SBT) to ${beneficiary}...`);
+                      await writeContractAsync({
+                          address: contracts.RELIEF_PASS_ADDRESS as `0x${string}`,
+                          abi: RELIEF_PASS_ABI,
+                          functionName: 'mintPass',
+                          args: [
+                              beneficiary as `0x${string}`, 
+                              "General Relief", // Default Category Name
+                              BigInt(100),      // Initial Credits
+                              "https://example.com/metadata.json" // Placeholder URI
+                          ],
+                      });
+                      setStatus(`Success! Soulbound ID issued to ${beneficiary}`);
+                  } catch (e: any) {
+                      console.error(e);
+                      setStatus(`SBT Issue Failed: ${e.message}`);
+                  }
+              }}>
+                  🆔 Issue Relief Pass (SBT)
+              </button>
+          </div>
         </div>
+
 
         <div className="card">
           <h3>3. Whitelist Vendor</h3>

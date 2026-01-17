@@ -12,6 +12,7 @@ export const getContracts = (chainId: number = DEFAULT_CHAIN_ID) => {
     return {
         RELIEF_TOKEN_ADDRESS: config.RELIEF_TOKEN as `0x${string}`,
         RELIEF_FUND_ADDRESS: config.RELIEF_FUND as `0x${string}`,
+        RELIEF_PASS_ADDRESS: (config as any).RELIEF_PASS as `0x${string}`,
         NETWORK_CHAIN_ID: chainId
     };
 };
@@ -603,6 +604,37 @@ export const RELIEF_FUND_ABI = [
       "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
       "name": "nonces",
       "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+      "stateMutability": "view",
+      "type": "function"
+    }
+] as const;
+
+export const RELIEF_PASS_ABI = [
+    {
+      "inputs": [{"internalType": "address","name": "to","type": "address"},{"internalType": "string","name": "category","type": "string"},{"internalType": "uint256","name": "initialCredits","type": "uint256"},{"internalType": "string","name": "uri","type": "string"}],
+      "name": "mintPass",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [{"internalType": "address","name": "beneficiary","type": "address"}],
+      "name": "getPassDetails",
+      "outputs": [{"internalType": "uint256","name": "id","type": "uint256"},{"internalType": "uint256","name": "credits","type": "uint256"},{"internalType": "string","name": "category","type": "string"},{"internalType": "string","name": "uri","type": "string"}],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [{"internalType": "address","name": "beneficiary","type": "address"},{"internalType": "uint256","name": "amount","type": "uint256"}],
+      "name": "spendCredits",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [{"internalType": "address","name": "owner","type": "address"}],
+      "name": "balanceOf",
+      "outputs": [{"internalType": "uint256","name": "","type": "uint256"}],
       "stateMutability": "view",
       "type": "function"
     }

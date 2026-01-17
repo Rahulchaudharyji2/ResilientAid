@@ -174,9 +174,9 @@ export default function VendorDashboard() {
         </div>
       </header>
 
-      <div className="card" style={{ maxWidth: '600px', margin: '2rem auto' }}>
-        <h2>Scan/Input Voucher (Offline Mode)</h2>
-        <p>Accept payments from Beneficiaries in your category.</p>
+      <div className="card" style={{ maxWidth: '600px', margin: '2rem auto', border: '1px solid #00ff88' }}>
+        <h2>📸 Scan Beneficiary Card / QR</h2>
+        <p style={{ color: '#bbb' }}>Verify beneficiary identity and claim payment instantly.</p>
 
         {/* Action Buttons */}
         <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>

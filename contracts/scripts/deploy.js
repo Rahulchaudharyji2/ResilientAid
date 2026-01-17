@@ -23,6 +23,13 @@ async function main() {
   const fundAddress = await fund.getAddress();
   console.log("ReliefFund deployed to:", fundAddress);
 
+  // 3. Deploy ReliefPass (SBT)
+  const ReliefPass = await hre.ethers.getContractFactory("ReliefPass");
+  const pass = await ReliefPass.deploy(deployer.address);
+  await pass.waitForDeployment();
+  const passAddress = await pass.getAddress();
+  console.log("ReliefPass (SBT) deployed to:", passAddress);
+
   // 3. Transfer ownership of Token to Fund
   console.log("Transferring Token ownership to ReliefFund...");
   await token.transferOwnership(fundAddress);
@@ -48,6 +55,7 @@ async function main() {
   deployments[chainId] = {
       RELIEF_TOKEN: tokenAddress,
       RELIEF_FUND: fundAddress,
+      RELIEF_PASS: passAddress, // New Soulbound Token
       updatedAt: new Date().toISOString()
   };
 
