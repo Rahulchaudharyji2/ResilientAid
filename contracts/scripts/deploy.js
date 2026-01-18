@@ -30,10 +30,15 @@ async function main() {
   const passAddress = await pass.getAddress();
   console.log("ReliefPass (SBT) deployed to:", passAddress);
 
-  // 3. Transfer ownership of Token to Fund
+  // 4. Transfer ownership of Token to Fund
   console.log("Transferring Token ownership to ReliefFund...");
   await token.transferOwnership(fundAddress);
   console.log("Ownership transferred.");
+
+  // 5. Link ReliefPass to ReliefFund (Secure Biometric Link)
+  console.log("Linking ReliefPass to ReliefFund for Security Checks...");
+  await fund.setReliefPass(passAddress);
+  console.log("ReliefPass Linked.");
 
   // 4. Update Frontend Config
   const deploymentsPath = path.join(__dirname, "../../frontend/config/deployments.json");

@@ -121,24 +121,27 @@ export default function BeneficiaryDashboard() {
   const [showPinModal, setShowPinModal] = useState(false);
   const [newPin, setNewPin] = useState('');
   
-  const handleSetSecurity = async () => {
-       if(!newPin || newPin.length !== 4) return alert("Enter 4 digit PIN");
+  const handleSetSecurity = async (secretOverride?: string) => {
+       const secretToSet = secretOverride || newPin;
+       
+       if(!secretToSet || secretToSet.length < 4) return alert("Enter valid PIN or Scan Biometrics");
+       
        try {
-           setStatus("🔐 Registering Biometric Security Hash on Blockchain...");
+           setStatus("🔐 Registering Biometric/PIN Hash on Blockchain...");
            
            const tx = await writeContractAsync({
               address: contracts.RELIEF_PASS_ADDRESS as `0x${string}`,
               abi: RELIEF_PASS_ABI,
               functionName: 'setSecurityPin',
-              args: [newPin] // In real app, this would be a specialized hash
+              args: [secretToSet] 
            });
            
-           setStatus("✅ Security Active! You can now pay Vendors using this PIN.");
+           setStatus("✅ Security Active! You are now protected.");
            setShowPinModal(false);
            setNewPin('');
        } catch (e: any) {
            console.error(e);
-           setStatus("Failed to Set PIN: " + e.message);
+           setStatus("Failed to Set Security: " + e.message);
        }
   };
 
@@ -202,23 +205,43 @@ export default function BeneficiaryDashboard() {
             }}>
                 <div style={{ background: '#111', padding: '2rem', borderRadius: '16px', border: '1px solid #00d0ff', maxWidth: '400px', width: '100%', textAlign: 'center' }}>
                     <h2 style={{ color: '#fff', marginBottom: '1rem' }}>🔐 Set Card Security</h2>
-                    <p style={{ color: '#aaa', marginBottom: '1rem' }}>Link your <strong>FaceID/Biometrics</strong> to this ID Card. This will be required for every purchase.</p>
+                    <p style={{ color: '#aaa', marginBottom: '2rem' }}>Link your <strong>FaceID/Biometrics</strong> to this ID Card. This will be required for vendor payments.</p>
                     
-                    <input 
-                        type="password" 
-                        placeholder="Set 4-Digit PIN" 
-                        maxLength={4}
-                        value={newPin}
-                        onChange={(e) => setNewPin(e.target.value)}
-                        style={{ textAlign: 'center', fontSize: '1.5rem', letterSpacing: '0.5rem', width: '200px', padding: '0.5rem', marginBottom: '1rem', borderRadius: '8px', border: '1px solid #444', background: '#222', color: '#fff' }} 
-                    />
+                     <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginBottom: '2rem' }}>
+                        <div 
+                           onClick={() => handleSetSecurity("FACE_ID_SIG_XYZ")}
+                           style={{ cursor: 'pointer', padding: '1rem', background: '#222', borderRadius: '12px', border: '1px solid #444', minWidth: '80px' }}
+                        >
+                            <div style={{ fontSize: '2rem' }}>🆔</div>
+                            <small>FaceID</small>
+                        </div>
+                        <div 
+                           onClick={() => handleSetSecurity("TOUCH_ID_SIG_ABC")}
+                           style={{ cursor: 'pointer', padding: '1rem', background: '#222', borderRadius: '12px', border: '1px solid #444', minWidth: '80px' }}
+                        >
+                            <div style={{ fontSize: '2rem' }}>👆</div>
+                            <small>TouchID</small>
+                        </div>
+                    </div>
+
+                    <div style={{ marginBottom: '1.5rem', borderTop: '1px solid #333', paddingTop: '1.5rem' }}>
+                        <p style={{ fontSize: '0.8rem', color: '#666', marginBottom: '0.5rem' }}>OR SET BACKUP PIN</p>
+                         <input 
+                            type="password" 
+                            placeholder="Set 4-Digit PIN" 
+                            maxLength={4}
+                            value={newPin}
+                            onChange={(e) => setNewPin(e.target.value)}
+                            style={{ textAlign: 'center', fontSize: '1.5rem', letterSpacing: '0.5rem', width: '200px', padding: '0.5rem', marginBottom: '1rem', borderRadius: '8px', border: '1px solid #444', background: '#222', color: '#fff' }} 
+                        />
+                         <button className="btn" style={{ width: '100%', background: '#00d0ff', color:'#000' }} onClick={() => handleSetSecurity()}>
+                            Set PIN
+                        </button>
+                    </div>
 
                     <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
                          <button className="btn" style={{ background: 'transparent', border: '1px solid #666' }} onClick={() => setShowPinModal(false)}>
                             Cancel
-                        </button>
-                        <button className="btn" style={{ background: '#00d0ff', color:'#000' }} onClick={handleSetSecurity}>
-                            ✅ Activate Security
                         </button>
                     </div>
                 </div>
