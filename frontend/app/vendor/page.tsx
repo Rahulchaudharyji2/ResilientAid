@@ -62,16 +62,11 @@ export default function VendorDashboard() {
 
   const [pinInput, setPinInput] = useState('');
 
-  const handleBiometricCharge = async (authSecret: string = "0000") => {
+  const handlePinCharge = async (pinSecret: string) => {
       
       try {
           setShowAuthModal(false); // Close modal
-          setStatus(`⌛ Authenticating (${authSecret === "0000" ? "FaceID" : "PIN"})...`);
-          
-          // Simulation delay
-          await new Promise(r => setTimeout(r, 1500)); 
-          
-          setStatus("✅ Verified! Processing Transaction on-chain...");
+          setStatus(`⌛ Verifying PIN On-Chain...`);
           
           const tx = await writeContractAsync({
               address: contracts.RELIEF_FUND_ADDRESS as `0x${string}`,
@@ -80,7 +75,7 @@ export default function VendorDashboard() {
               args: [
                   bioAddress as `0x${string}`,
                   parseEther(bioAmount),
-                  authSecret // Pass the PIN/Secret to Contract
+                  pinSecret // Pass the PIN
               ]
           });
           
@@ -95,7 +90,7 @@ export default function VendorDashboard() {
           setPinInput('');
       } catch (e: any) {
           console.error(e);
-          setStatus(`Biometric Charge Failed: ${e.message}`);
+          setStatus(`Charge Failed: ${e.message}`);
       }
   };
 
@@ -222,17 +217,33 @@ export default function VendorDashboard() {
       </header>
 
       <div className="card" style={{ maxWidth: '600px', margin: '2rem auto', border: '1px solid #00ff88' }}>
-        <div style={{ display: 'flex', borderBottom: '1px solid #444', marginBottom: '1rem', paddingBottom: '0.5rem' }}>
-            <button 
-                onClick={() => setActiveTab('bio')}
-                style={{ flex: 1, background: activeTab === 'bio' ? 'transparent' : 'transparent', color: activeTab === 'bio' ? '#ff007a' : '#888', border: 'none', borderBottom: activeTab === 'bio' ? '2px solid #ff007a' : 'none', fontWeight: 'bold' }}>
-                👆 Biometric Charge
-            </button>
-            <button 
-                onClick={() => setActiveTab('voucher')}
-                style={{ flex: 1, background: 'transparent', color: activeTab === 'voucher' ? '#00ff88' : '#888', border: 'none', borderBottom: activeTab === 'voucher' ? '2px solid #00ff88' : 'none', fontWeight: 'bold' }}>
-                📸 Scan Instant Voucher
-            </button>
+        <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
+          <button 
+            onClick={() => setActiveTab('bio')}
+            style={{ 
+                flex: 1, 
+                padding: '1rem', 
+                background: activeTab === 'bio' ? '#00d0ff' : '#222', 
+                color: activeTab === 'bio' ? '#000' : '#888',
+                borderRadius: '12px',
+                border: 'none',
+                fontWeight: 'bold'
+            }}>
+             🔐 PIN Charge
+          </button>
+          <button 
+             onClick={() => setActiveTab('voucher')}
+             style={{ 
+                flex: 1, 
+                padding: '1rem', 
+                background: activeTab === 'voucher' ? '#00d0ff' : '#222', 
+                color: activeTab === 'voucher' ? '#000' : '#888',
+                borderRadius: '12px',
+                border: 'none',
+                fontWeight: 'bold'
+             }}>
+             📷 Scan Voucher
+          </button>
         </div>
         {activeTab === 'voucher' ? (
           <div>
@@ -273,7 +284,7 @@ export default function VendorDashboard() {
           </div>
         ) : (
           <div>
-              <p style={{ color: '#bbb' }}>Scan the beneficiary's <strong>Permanent Identity Card</strong> and initiate a charge.</p>
+              <p style={{ color: '#bbb' }}>Ask the beneficiary to enter their <strong>Secure 4-Digit PIN</strong> to authorize this transaction.</p>
               
               <div style={{ marginBottom: '1rem' }}>
                   <label style={{ display: 'block', marginBottom: '0.5rem' }}>Beneficiary Address / ID</label>
@@ -304,45 +315,29 @@ export default function VendorDashboard() {
                 position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
                 background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
             }}>
-                <div style={{ background: '#111', padding: '2rem', borderRadius: '16px', border: '1px solid #ff007a', maxWidth: '400px', width: '100%', textAlign: 'center' }}>
-                    <h2 style={{ color: '#fff', marginBottom: '1rem' }}>🔒 Beneficiary Authentication</h2>
-                    <p style={{ color: '#aaa', marginBottom: '2rem' }}>Please ask the beneficiary to verify via FaceID, Fingerprint, or PIN.</p>
+                <div style={{ background: '#111', padding: '2rem', borderRadius: '16px', border: '1px solid #00d0ff', maxWidth: '400px', width: '100%', textAlign: 'center' }}>
+                    <h2 style={{ color: '#fff', marginBottom: '1rem' }}>🔐 Beneficiary Authorization</h2>
+                    <p style={{ color: '#aaa', marginBottom: '2rem' }}>Ask the Beneficiary to enter their <strong>Secure 4-Digit PIN</strong> to authorize this transaction.</p>
                     
-                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginBottom: '2rem' }}>
-                        <div 
-                           onClick={() => handleBiometricCharge("FACE_ID_SIG_XYZ")}
-                           style={{ cursor: 'pointer', padding: '1rem', background: '#222', borderRadius: '12px', border: '1px solid #444', minWidth: '80px' }}
-                        >
-                            <div style={{ fontSize: '2rem' }}>🆔</div>
-                            <small>Facescan</small>
-                        </div>
-                        <div 
-                           onClick={() => handleBiometricCharge("TOUCH_ID_SIG_ABC")}
-                           style={{ cursor: 'pointer', padding: '1rem', background: '#222', borderRadius: '12px', border: '1px solid #444', minWidth: '80px' }}
-                        >
-                            <div style={{ fontSize: '2rem' }}>👆</div>
-                            <small>TouchID</small>
-                        </div>
-                    </div>
-
                     <div style={{ marginBottom: '1.5rem' }}>
-                        <p style={{ fontSize: '0.8rem', color: '#666', marginBottom: '0.5rem' }}>OR ENTER PIN</p>
                         <input 
                             type="password" 
                             placeholder="• • • •" 
                             maxLength={4}
                             value={pinInput}
-                            style={{ textAlign: 'center', fontSize: '1.5rem', letterSpacing: '0.5rem', width: '150px' }} 
+                            style={{ textAlign: 'center', fontSize: '1.5rem', letterSpacing: '0.5rem', width: '150px', padding: '0.5rem', borderRadius: '8px', border: '1px solid #444', background: '#333', color: '#fff' }} 
                             onChange={(e) => {
                                 setPinInput(e.target.value);
-                                if(e.target.value.length === 4) handleBiometricCharge(e.target.value);
+                                if(e.target.value.length === 4) handlePinCharge(e.target.value);
                             }}
                         />
                     </div>
 
-                    <button className="btn" style={{ background: 'transparent', border: '1px solid #666' }} onClick={() => setShowAuthModal(false)}>
-                        Cancel Transaction
-                    </button>
+                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                         <button className="btn" style={{ background: 'transparent', border: '1px solid #666' }} onClick={() => setShowAuthModal(false)}>
+                            Cancel Transaction
+                        </button>
+                    </div>
                 </div>
             </div>
         )}

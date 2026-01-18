@@ -124,10 +124,10 @@ export default function BeneficiaryDashboard() {
   const handleSetSecurity = async (secretOverride?: string) => {
        const secretToSet = secretOverride || newPin;
        
-       if(!secretToSet || secretToSet.length < 4) return alert("Enter valid PIN or Scan Biometrics");
+       if(!secretToSet || secretToSet.length < 4) return alert("Enter valid PIN");
        
        try {
-           setStatus("🔐 Registering Biometric/PIN Hash on Blockchain...");
+           setStatus("🔐 Registering PIN on Blockchain...");
            
            const tx = await writeContractAsync({
               address: contracts.RELIEF_PASS_ADDRESS as `0x${string}`,
@@ -186,12 +186,11 @@ export default function BeneficiaryDashboard() {
                  </div>
             </div>
             
-            {/* Security Link Button (Overlay or below) */}
              <div style={{ marginTop: '1rem', textAlign: 'right' }}>
                 <button 
                   onClick={() => setShowPinModal(true)}
                   style={{ background: 'rgba(0,0,0,0.3)', color: '#fff', border: '1px solid #aaa', padding: '0.5rem 1rem', borderRadius: '8px', fontSize: '0.8rem', cursor: 'pointer' }}>
-                  🔒 Register Id / PIN
+                  🔒 Set Security PIN
                 </button>
              </div>
         </div>
@@ -204,28 +203,10 @@ export default function BeneficiaryDashboard() {
                 background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
             }}>
                 <div style={{ background: '#111', padding: '2rem', borderRadius: '16px', border: '1px solid #00d0ff', maxWidth: '400px', width: '100%', textAlign: 'center' }}>
-                    <h2 style={{ color: '#fff', marginBottom: '1rem' }}>🔐 Set Card Security</h2>
-                    <p style={{ color: '#aaa', marginBottom: '2rem' }}>Link your <strong>FaceID/Biometrics</strong> to this ID Card. This will be required for vendor payments.</p>
+                    <h2 style={{ color: '#fff', marginBottom: '1rem' }}>🔐 Set Security PIN</h2>
+                    <p style={{ color: '#aaa', marginBottom: '2rem' }}>Set a <strong>4-Digit PIN</strong> for your Relief Card. You will need this to authorize payments at Vendors.</p>
                     
-                     <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginBottom: '2rem' }}>
-                        <div 
-                           onClick={() => handleSetSecurity("FACE_ID_SIG_XYZ")}
-                           style={{ cursor: 'pointer', padding: '1rem', background: '#222', borderRadius: '12px', border: '1px solid #444', minWidth: '80px' }}
-                        >
-                            <div style={{ fontSize: '2rem' }}>🆔</div>
-                            <small>FaceID</small>
-                        </div>
-                        <div 
-                           onClick={() => handleSetSecurity("TOUCH_ID_SIG_ABC")}
-                           style={{ cursor: 'pointer', padding: '1rem', background: '#222', borderRadius: '12px', border: '1px solid #444', minWidth: '80px' }}
-                        >
-                            <div style={{ fontSize: '2rem' }}>👆</div>
-                            <small>TouchID</small>
-                        </div>
-                    </div>
-
-                    <div style={{ marginBottom: '1.5rem', borderTop: '1px solid #333', paddingTop: '1.5rem' }}>
-                        <p style={{ fontSize: '0.8rem', color: '#666', marginBottom: '0.5rem' }}>OR SET BACKUP PIN</p>
+                    <div style={{ marginBottom: '1.5rem' }}>
                          <input 
                             type="password" 
                             placeholder="Set 4-Digit PIN" 
