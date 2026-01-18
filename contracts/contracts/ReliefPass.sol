@@ -17,6 +17,9 @@ contract ReliefPass is ERC721URIStorage, Ownable {
     // Mapping from Beneficiary Address to hasPass
     mapping(address => bool) public hasPass;
 
+    // Mapping from Token ID to Security Hash (keccak256 of PIN/BioData)
+    mapping(uint256 => bytes32) private _securityHashes;
+
     constructor(address initialOwner)
         ERC721("Abha Relief Pass", "ABHA")
         Ownable(initialOwner)
@@ -33,6 +36,21 @@ contract ReliefPass is ERC721URIStorage, Ownable {
         cardCategory[tokenId] = category;
         userTokenId[to] = tokenId;
         hasPass[to] = true;
+        
+        // Default PIN: "0000" (Hash for demo setup)
+        _securityHashes[tokenId] = keccak256(abi.encodePacked("0000"));
+    }
+
+    function setSecurityPin(string memory newPin) public {
+        require(hasPass[msg.sender], "No Pass found");
+        uint256 tokenId = userTokenId[msg.sender];
+        _securityHashes[tokenId] = keccak256(abi.encodePacked(newPin));
+    }
+
+    function verifyPin(address user, string memory pin) public view returns (bool) {
+         if(!hasPass[user]) return false;
+         uint256 tokenId = userTokenId[user];
+         return _securityHashes[tokenId] == keccak256(abi.encodePacked(pin));
     }
 
     // Soulbound: Block transfers (allow only Mint and Burn)

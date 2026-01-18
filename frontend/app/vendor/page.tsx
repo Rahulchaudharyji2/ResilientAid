@@ -60,13 +60,16 @@ export default function VendorDashboard() {
   const [bioAmount, setBioAmount] = useState('');
   const [showAuthModal, setShowAuthModal] = useState(false);
 
-  const handleBiometricCharge = async () => {
-      // If modal is not open, don't execute logic yet (validation happens in render)
+  const [pinInput, setPinInput] = useState('');
+
+  const handleBiometricCharge = async (authSecret: string = "0000") => {
       
       try {
           setShowAuthModal(false); // Close modal
-          setStatus("⌛ Authenticating with Global ID...");
-          await new Promise(r => setTimeout(r, 1500)); // Simulating Network Auth
+          setStatus(`⌛ Authenticating (${authSecret === "0000" ? "FaceID" : "PIN"})...`);
+          
+          // Simulation delay
+          await new Promise(r => setTimeout(r, 1500)); 
           
           setStatus("✅ Verified! Processing Transaction on-chain...");
           
@@ -76,7 +79,8 @@ export default function VendorDashboard() {
               functionName: 'chargeBeneficiary',
               args: [
                   bioAddress as `0x${string}`,
-                  parseEther(bioAmount)
+                  parseEther(bioAmount),
+                  authSecret // Pass the PIN/Secret to Contract
               ]
           });
           
@@ -88,6 +92,7 @@ export default function VendorDashboard() {
           
           setBioAddress('');
           setBioAmount('');
+          setPinInput('');
       } catch (e: any) {
           console.error(e);
           setStatus(`Biometric Charge Failed: ${e.message}`);
@@ -305,14 +310,14 @@ export default function VendorDashboard() {
                     
                     <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginBottom: '2rem' }}>
                         <div 
-                           onClick={handleBiometricCharge}
+                           onClick={() => handleBiometricCharge("FACE_ID_SIG_XYZ")}
                            style={{ cursor: 'pointer', padding: '1rem', background: '#222', borderRadius: '12px', border: '1px solid #444', minWidth: '80px' }}
                         >
                             <div style={{ fontSize: '2rem' }}>🆔</div>
-                            <small>FaceID</small>
+                            <small>Facescan</small>
                         </div>
                         <div 
-                           onClick={handleBiometricCharge}
+                           onClick={() => handleBiometricCharge("TOUCH_ID_SIG_ABC")}
                            style={{ cursor: 'pointer', padding: '1rem', background: '#222', borderRadius: '12px', border: '1px solid #444', minWidth: '80px' }}
                         >
                             <div style={{ fontSize: '2rem' }}>👆</div>
@@ -326,9 +331,11 @@ export default function VendorDashboard() {
                             type="password" 
                             placeholder="• • • •" 
                             maxLength={4}
+                            value={pinInput}
                             style={{ textAlign: 'center', fontSize: '1.5rem', letterSpacing: '0.5rem', width: '150px' }} 
                             onChange={(e) => {
-                                if(e.target.value.length === 4) handleBiometricCharge();
+                                setPinInput(e.target.value);
+                                if(e.target.value.length === 4) handleBiometricCharge(e.target.value);
                             }}
                         />
                     </div>

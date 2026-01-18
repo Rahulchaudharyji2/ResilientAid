@@ -1,7 +1,7 @@
 "use client";
 import { useState } from 'react';
 import { useAccount, useReadContract, useSignMessage, useWriteContract, useChainId } from 'wagmi';
-import { getContracts, RELIEF_TOKEN_ABI, RELIEF_FUND_ABI } from '../../config/contracts';
+import { getContracts, RELIEF_TOKEN_ABI, RELIEF_FUND_ABI, RELIEF_PASS_ABI } from '../../config/contracts';
 import { formatEther, parseEther } from 'viem';
 import QRCode from 'react-qr-code';
 import Navbar from '../components/Navbar';
@@ -117,6 +117,31 @@ export default function BeneficiaryDashboard() {
     }
   };
 
+  // PIN Setup Logic
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [newPin, setNewPin] = useState('');
+  
+  const handleSetSecurity = async () => {
+       if(!newPin || newPin.length !== 4) return alert("Enter 4 digit PIN");
+       try {
+           setStatus("🔐 Registering Biometric Security Hash on Blockchain...");
+           
+           const tx = await writeContractAsync({
+              address: contracts.RELIEF_PASS_ADDRESS as `0x${string}`,
+              abi: RELIEF_PASS_ABI,
+              functionName: 'setSecurityPin',
+              args: [newPin] // In real app, this would be a specialized hash
+           });
+           
+           setStatus("✅ Security Active! You can now pay Vendors using this PIN.");
+           setShowPinModal(false);
+           setNewPin('');
+       } catch (e: any) {
+           console.error(e);
+           setStatus("Failed to Set PIN: " + e.message);
+       }
+  };
+
   return (
     <div className="container" style={{ paddingTop: '100px' }}>
       <Navbar />
@@ -157,8 +182,48 @@ export default function BeneficiaryDashboard() {
                     <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#00ff88' }}>{formattedBalance} <span style={{ fontSize: '0.8rem' }}>rUSD</span></div>
                  </div>
             </div>
+            
+            {/* Security Link Button (Overlay or below) */}
+             <div style={{ marginTop: '1rem', textAlign: 'right' }}>
+                <button 
+                  onClick={() => setShowPinModal(true)}
+                  style={{ background: 'rgba(0,0,0,0.3)', color: '#fff', border: '1px solid #aaa', padding: '0.5rem 1rem', borderRadius: '8px', fontSize: '0.8rem', cursor: 'pointer' }}>
+                  🔒 Register Id / PIN
+                </button>
+             </div>
         </div>
       </header>
+      
+      {/* PIN Setup Modal */}
+        {showPinModal && (
+            <div style={{
+                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+            }}>
+                <div style={{ background: '#111', padding: '2rem', borderRadius: '16px', border: '1px solid #00d0ff', maxWidth: '400px', width: '100%', textAlign: 'center' }}>
+                    <h2 style={{ color: '#fff', marginBottom: '1rem' }}>🔐 Set Card Security</h2>
+                    <p style={{ color: '#aaa', marginBottom: '1rem' }}>Link your <strong>FaceID/Biometrics</strong> to this ID Card. This will be required for every purchase.</p>
+                    
+                    <input 
+                        type="password" 
+                        placeholder="Set 4-Digit PIN" 
+                        maxLength={4}
+                        value={newPin}
+                        onChange={(e) => setNewPin(e.target.value)}
+                        style={{ textAlign: 'center', fontSize: '1.5rem', letterSpacing: '0.5rem', width: '200px', padding: '0.5rem', marginBottom: '1rem', borderRadius: '8px', border: '1px solid #444', background: '#222', color: '#fff' }} 
+                    />
+
+                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                         <button className="btn" style={{ background: 'transparent', border: '1px solid #666' }} onClick={() => setShowPinModal(false)}>
+                            Cancel
+                        </button>
+                        <button className="btn" style={{ background: '#00d0ff', color:'#000' }} onClick={handleSetSecurity}>
+                            ✅ Activate Security
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', marginTop: '2rem' }}>
         {/* Offline Payment renamed to Benefit utilization */}
