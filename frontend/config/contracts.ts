@@ -652,5 +652,12 @@ export const RELIEF_PASS_ABI = [
        "outputs": [{"internalType": "bool","name": "","type": "bool"}],
        "stateMutability": "view",
        "type": "function"
+    },
+    {
+       "inputs": [{"internalType": "address","name": "beneficiary","type": "address"}],
+       "name": "hasPass",
+       "outputs": [{"internalType": "bool","name": "","type": "bool"}],
+       "stateMutability": "view",
+       "type": "function"
     }
 ] as const;
