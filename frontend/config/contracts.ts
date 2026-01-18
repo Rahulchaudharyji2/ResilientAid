@@ -638,5 +638,19 @@ export const RELIEF_PASS_ABI = [
       "outputs": [{"internalType": "uint256","name": "","type": "uint256"}],
       "stateMutability": "view",
       "type": "function"
+    },
+    {
+       "inputs": [{"internalType": "string","name": "newPin","type": "string"}],
+       "name": "setSecurityPin",
+       "outputs": [],
+       "stateMutability": "nonpayable",
+       "type": "function"
+    },
+    {
+       "inputs": [{"internalType": "address","name": "user","type": "address"}, {"internalType": "string","name": "pin","type": "string"}],
+       "name": "verifyPin",
+       "outputs": [{"internalType": "bool","name": "","type": "bool"}],
+       "stateMutability": "view",
+       "type": "function"
     }
 ] as const;
