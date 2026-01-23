@@ -1,0 +1,39 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="primaryGrad" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00f2ff" />
+      <stop offset="100%" stop-color="#00ff9d" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="15" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  
+  <!-- Outer Shield/Hexagon -->
+  <path d="M256 32L432 96V224C432 336 358 440 256 480C154 440 80 336 80 224V96L256 32Z" 
+        stroke="url(#primaryGrad)" 
+        stroke-width="24" 
+        fill="rgba(0, 242, 255, 0.05)"
+        stroke-linecap="round" 
+        stroke-linejoin="round"/>
+
+  <!-- Inner Heart/Pulse Node -->
+  <path d="M256 160C256 160 270 190 290 210C315 235 340 230 340 200C340 180 325 165 310 160C325 155 340 140 340 120C340 90 315 85 290 110C270 130 256 160 256 160Z" 
+        fill="none" /> 
+        
+  <!-- Abstract Node Network -->
+  <circle cx="256" cy="256" r="40" fill="url(#primaryGrad)" filter="url(#glow)">
+    <animate attributeName="r" values="35;45;35" dur="3s" repeatCount="indefinite"/>
+  </circle>
+  
+  <line x1="256" y1="216" x2="256" y2="128" stroke="url(#primaryGrad)" stroke-width="12" stroke-linecap="round" />
+  <line x1="256" y1="296" x2="256" y2="384" stroke="url(#primaryGrad)" stroke-width="12" stroke-linecap="round" />
+  <line x1="216" y1="256" x2="128" y2="256" stroke="url(#primaryGrad)" stroke-width="12" stroke-linecap="round" />
+  <line x1="296" y1="256" x2="384" y2="256" stroke="url(#primaryGrad)" stroke-width="12" stroke-linecap="round" />
+
+  <circle cx="256" cy="128" r="16" fill="#fff" />
+  <circle cx="256" cy="384" r="16" fill="#fff" />
+  <circle cx="128" cy="256" r="16" fill="#fff" />
+  <circle cx="384" cy="256" r="16" fill="#fff" />
+</svg>
