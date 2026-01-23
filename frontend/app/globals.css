@@ -1,118 +1,129 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
-  --background: #0f0c29;
-  --foreground: #ffffff;
-  --primary: #302b63;
-  --secondary: #24243e;
-  --accent: #00d2ff;
-  --glass: rgba(255, 255, 255, 0.1);
-  --glass-border: rgba(255, 255, 255, 0.2);
-  --text-muted: #b3b3b3;
+  /* Core Colors */
+  --background: #02040a;
+  --primary: #ffffff;
+  --secondary: #94a3b8;
+  
+  /* Brand Colors */
+  --accent: #00f2ff;
+  --accent-glow: rgba(0, 242, 255, 0.4);
+  --success: #00ff9d;
+  --error: #ff4d4d;
+  
+  /* Glass Surfaces */
+  --glass: rgba(255, 255, 255, 0.03);
+  --glass-hover: rgba(255, 255, 255, 0.06);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  
+  /* Text */
+  --text-primary: #ffffff;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
 }
 
 body {
-  background: linear-gradient(135deg, var(--background), var(--primary), var(--secondary));
-  color: var(--foreground);
+  background-color: var(--background);
+  background-image: 
+      radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.08) 0%, transparent 25%),
+      radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.08) 0%, transparent 25%);
+  color: var(--text-primary);
   font-family: 'Inter', sans-serif;
-  margin: 0;
-  padding: 0;
   min-height: 100vh;
+  margin: 0;
+  overflow-x: hidden;
 }
 
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.card {
-  background: var(--glass);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--glass-border);
-  border-radius: 16px;
-  padding: 2rem;
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s, box-shadow 0.2s;
-  animation: fadeIn 0.6s ease-out forwards;
-}
-
-.card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 40px rgba(0, 210, 255, 0.2);
-}
-
-.btn {
-  background: var(--accent);
-  color: #000;
-  padding: 0.8rem 1.5rem;
-  border: none;
-  border-radius: 8px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.btn:hover {
-  background: #fff;
-  box-shadow: 0 0 15px var(--accent);
-}
-
-h1, h2, h3 {
-  letter-spacing: -0.5px;
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Outfit', sans-serif;
+  letter-spacing: -0.02em;
 }
 
 h1 {
-  font-size: 3rem;
-  background: linear-gradient(to right, #00d2ff, #3a7bd5);
+  font-size: 4rem;
+  line-height: 1.1;
+  font-weight: 700;
+  background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 1.5rem;
+}
+
+/* Utilities */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.glass-panel {
+  background: var(--glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-input, select {
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid var(--glass-border);
-  color: #fff;
-  padding: 0.8rem;
-  border-radius: 8px;
-  width: 100%;
-  margin-bottom: 1rem;
+.text-gradient-accent {
+  background: linear-gradient(135deg, #00f2ff 0%, #00a8ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-input:focus {
-  outline: none;
-  border-color: var(--accent);
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
 }
 
-/* Responsive Utilities */
-@media (max-width: 768px) {
-  .container {
-    padding: 1rem;
-    width: 95%;
-  }
-
-  h1 {
-    font-size: 2rem;
-  }
-
-  .card {
-    padding: 1.5rem;
-  }
-  
-  /* Make all flex containers with 'flex-responsive' class stack on mobile */
-  .flex-responsive {
-    flex-direction: column !important;
-    align-items: stretch !important;
-  }
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.flex-responsive {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 3px;
 }
+
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Animations */
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* Input Styles Reset */
+input, select, textarea {
+  font-family: 'Inter', sans-serif;
+}
+
+/* NextJS specifics */
+#__next {
+  min-height: 100vh;
+}
+
+/* Custom Utility Classes */
+.bg-surface-dark {
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
