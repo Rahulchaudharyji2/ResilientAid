@@ -10,6 +10,11 @@ export const metadata: Metadata = {
   title: "Resilient-Aid",
   description: "ZK-Powered Offline Stablecoin Relief System",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/logo.svg",
+    shortcut: "/logo.svg",
+    apple: "/logo.svg",
+  },
 };
 
 export const viewport: Viewport = {
