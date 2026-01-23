@@ -8,13 +8,15 @@ interface CardProps {
   className?: string;
   hoverEffect?: boolean;
   delay?: number;
+  onClick?: () => void;
 }
 
 export const Card = ({ 
   children, 
   className = "", 
   hoverEffect = true,
-  delay = 0 
+  delay = 0,
+  onClick
 }: CardProps) => {
   return (
     <motion.div
@@ -31,6 +33,7 @@ export const Card = ({
         y: -5,
         boxShadow: "0 20px 40px -10px rgba(0,0,0,0.5), 0 0 20px rgba(0, 242, 255, 0.1)"
       } : {}}
+      onClick={onClick}
       className={`
         relative overflow-hidden rounded-2xl
         bg-glass backdrop-blur-xl border border-glass-border

@@ -1,16 +1,9 @@
-// HACK: Mocking Prisma Client to avoid "npx prisma generate" build failures during Hackathon
-// This disables the persistent database but keeps the app running.
+import { PrismaClient } from "@prisma/client"
 
-const prismaMock = {
-    user: {
-        findUnique: async () => null,
-        create: async () => null,
-        update: async () => null
-    },
-    transaction: {
-        findMany: async () => [], // Return empty history
-        create: async () => null
-    }
-};
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
 
-export default prismaMock as any;
+export const prisma = globalForPrisma.prisma || new PrismaClient()
+
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma
+
+export default prisma

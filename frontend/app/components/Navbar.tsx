@@ -5,16 +5,14 @@ import { usePathname } from 'next/navigation';
 import { LayoutDashboard, HeartHandshake, Users, Store, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { handleSignOut } from '../actions/auth';
 
 export default function Navbar() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navLinks = [
-    { name: 'Admin', path: '/admin', icon: <LayoutDashboard size={18} /> },
     { name: 'Donor', path: '/donor', icon: <HeartHandshake size={18} /> },
-    { name: 'Beneficiary', path: '/beneficiary', icon: <Users size={18} /> },
-    { name: 'Vendor', path: '/vendor', icon: <Store size={18} /> },
   ];
 
   return (
@@ -72,6 +70,20 @@ export default function Navbar() {
                 chainStatus="icon" 
               />
             </div>
+            
+            <Link href="/login">
+              <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-full text-sm font-bold transition-all cursor-pointer border border-white/5">
+                <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+                Login / Dashboard
+              </div>
+            </Link>
+
+            <button 
+                onClick={() => handleSignOut()}
+                className="hidden md:flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-full text-sm font-bold transition-all cursor-pointer border border-red-500/20"
+            >
+                Logout
+            </button>
             
             {/* Mobile Toggle */}
             <button 
